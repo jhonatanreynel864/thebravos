@@ -153,16 +153,16 @@ export default function Mensajes() {
           background:var(--accent); color:#fff;
           padding:10px 16px; border-radius:18px 18px 4px 18px;
           font-size:14px; line-height:1.6;
-          max-width:65%; word-break:break-word;
-          white-space:pre-wrap;
+          max-width:420px; width:fit-content;
+          word-break:break-word; white-space:pre-wrap;
         }
         .burbuja-recibida {
           background:var(--surface-2); color:var(--ink-primary);
           border:1px solid var(--border-subtle);
           padding:10px 16px; border-radius:18px 18px 18px 4px;
           font-size:14px; line-height:1.6;
-          max-width:65%; word-break:break-word;
-          white-space:pre-wrap;
+          max-width:420px; width:fit-content;
+          word-break:break-word; white-space:pre-wrap;
         }
         .send-msg-btn {
           width:40px; height:40px; border-radius:50%;

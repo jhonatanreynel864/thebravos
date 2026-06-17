@@ -44,9 +44,9 @@ export default function Feed({ perfil: perfilProp, onVerPerfil }) {
   async function cargarTodo() {
     setCargando(true)
     const [pubs, encs, comps] = await Promise.all([
-      supabase.from('publicaciones').select('*, profiles(nombre, carrera, foto_perfil_url)').order('created_at', { ascending: false }).limit(30),
-      supabase.from('encuestas').select('*, profiles(nombre, foto_perfil_url)').order('created_at', { ascending: false }).limit(20),
-      supabase.from('comparaciones').select('*, profiles(nombre, foto_perfil_url)').order('created_at', { ascending: false }).limit(20),
+      supabase.from('publicaciones').select('*, profiles(id, nombre, carrera, foto_perfil_url)').order('created_at', { ascending: false }).limit(30),
+      supabase.from('encuestas').select('*, profiles(id, nombre, foto_perfil_url)').order('created_at', { ascending: false }).limit(20),
+      supabase.from('comparaciones').select('*, profiles(id, nombre, foto_perfil_url)').order('created_at', { ascending: false }).limit(20),
     ])
 
     const publicaciones = (pubs.data || []).map(p => ({ ...p, tipo: 'publicacion' }))
