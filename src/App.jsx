@@ -8,6 +8,7 @@ import Amigos from './pages/Amigos'
 import Explorar from './pages/Explorar'
 import Mensajes from './pages/Mensajes'
 import Notificaciones from './pages/Notificaciones'
+import PerfilUsuario from './pages/PerfilUsuario'
 import { Home, Compass, MessageCircle, Bell, Users, User, Sun, Moon, Search, Sparkles, Trophy, GraduationCap, Award, BarChart3, FileText } from 'lucide-react'
 
 const getCss = (tema) => `
@@ -144,14 +145,15 @@ export default function App() {
   const [vista, setVista] = useState('feed')
   const [perfil, setPerfil] = useState(null)
   const [totalAmigos, setTotalAmigos] = useState(0)
-  const [totalNotificaciones] = useState(0)
-  const [totalMensajes] = useState(0)
+  const [totalNotificaciones, setTotalNotificaciones] = useState(0)
+  const [totalMensajes, setTotalMensajes] = useState(0)
   const [tema, setTema] = useState(() => localStorage.getItem('tema') || 'oscuro')
   const [carrerasGuardadas, setCarrerasGuardadas] = useState([])
   const [logros, setLogros] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [busquedaActiva, setBusquedaActiva] = useState(false)
   const [resultadosBusqueda, setResultadosBusqueda] = useState([])
+  const [perfilUsuarioId, setPerfilUsuarioId] = useState(null)
 
   useEffect(() => {
     if (!usuario?.id) return
@@ -161,6 +163,13 @@ export default function App() {
     cargarTotalAmigos()
     cargarCarrerasGuardadas()
     calcularLogros()
+    cargarTotalNotificaciones()
+    cargarTotalMensajes()
+    const intervalo = setInterval(() => {
+      cargarTotalNotificaciones()
+      cargarTotalMensajes()
+    }, 30000)
+    return () => clearInterval(intervalo)
   }, [usuario])
 
   async function cargarTotalAmigos() {
@@ -210,6 +219,22 @@ export default function App() {
     if ((compCount || 0) >= 1) logrosObtenidos.push({ id:'primer_comp', titulo:'Primera comparacion votada' })
 
     setLogros(logrosObtenidos)
+  }
+
+  async function cargarTotalNotificaciones() {
+    if (!usuario?.id) return
+    const { count: solicitudes } = await supabase
+      .from('amigos').select('*', { count:'exact', head:true })
+      .eq('amigo_id', usuario.id).eq('estado', 'pendiente')
+    setTotalNotificaciones(solicitudes || 0)
+  }
+
+  async function cargarTotalMensajes() {
+    if (!usuario?.id) return
+    const { count: noLeidos } = await supabase
+      .from('mensajes').select('*', { count:'exact', head:true })
+      .eq('receptor_id', usuario.id).eq('leido', false)
+    setTotalMensajes(noLeidos || 0)
   }
 
   async function buscarContenido(texto) {
@@ -421,7 +446,8 @@ export default function App() {
 
           {/* Contenido central */}
           <main style={{ minWidth:0 }}>
-            {vista === 'feed' && <Feed perfil={perfil} />}
+            {vista === 'feed' && !perfilUsuarioId && <Feed perfil={perfil} onVerPerfil={setPerfilUsuarioId} />}
+{vista === 'feed' && perfilUsuarioId && <PerfilUsuario usuarioId={perfilUsuarioId} onVolver={() => setPerfilUsuarioId(null)} />}
             {vista === 'perfil' && (
               <Perfil onVolver={() => setVista('feed')} onActualizar={setPerfil} tema={tema} onToggleTema={toggleTema} />
             )}

@@ -137,7 +137,7 @@ export default function Mensajes() {
         .contacto-row { display:flex; align-items:center; gap:12px; padding:12px 16px; cursor:pointer; border-radius:var(--r-md); transition:background 150ms ease; }
         .contacto-row:hover { background:var(--surface-2); }
         .contacto-row.active { background:var(--accent-muted); }
-        .burbuja { max-width:75%; padding:10px 14px; border-radius:18px; font-size:14px; line-height:1.5; word-break:break-word; }
+        .burbuja { max-width:70%; padding:10px 16px; border-radius:18px; font-size:14px; line-height:1.6; word-break:break-word; white-space:pre-wrap; word-wrap:break-word; }
         .burbuja-enviada { background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
         .burbuja-recibida { background:var(--surface-2); color:var(--ink-primary); border:1px solid var(--border-subtle); border-bottom-left-radius:4px; }
         .send-msg-btn { width:40px; height:40px; border-radius:50%; background:var(--accent); border:none; cursor:pointer; display:flex; align-items:center; justify-content:center; color:#fff; transition:all 150ms ease; flex-shrink:0; box-shadow:0 2px 8px var(--accent-glow); }
@@ -150,7 +150,7 @@ export default function Mensajes() {
       <div style={{
         background:'var(--surface-1)', border:'1px solid var(--border-subtle)',
         borderRadius:'var(--r-xl)', overflow:'hidden',
-        display:'grid', gridTemplateColumns:'280px 1fr', height:'calc(100vh - 120px)'
+        display:'grid', gridTemplateColumns:'260px 1fr', height:'calc(100vh - 112px)', minHeight:500
       }}>
 
         {/* Panel izquierdo - Conversaciones */}

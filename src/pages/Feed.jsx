@@ -293,6 +293,17 @@ export default function Feed({ perfil: perfilProp }) {
     cargarComentarios(id)
   }
 
+  async function borrarComentario(comentarioId) {
+    await supabase.from('comentarios').delete().eq('id', comentarioId)
+    setComentarios(prev => {
+      const nuevo = { ...prev }
+      Object.keys(nuevo).forEach(key => {
+        nuevo[key] = nuevo[key].filter(c => c.id !== comentarioId)
+      })
+      return nuevo
+    })
+  }
+
   function toggleComentarios(e, id) {
     e.stopPropagation()
     const abierto = comentariosAbiertos[id]
@@ -475,7 +486,8 @@ export default function Feed({ perfil: perfilProp }) {
                 textoComentario={textoComentario[item.id] || ''}
                 onReaccionar={reaccionar} onToggleComentarios={toggleComentarios}
                 onComentarChange={t => setTextoComentario(prev => ({ ...prev, [item.id]:t }))}
-                onComentar={comentar} iniciales={iniciales} perfil={perfil} />
+                onComentar={comentar} iniciales={iniciales} perfil={perfil}
+              onBorrarComentario={borrarComentario} usuario={usuario} />
             )}
             {item.tipo === 'encuesta' && (
               <CardEncuesta item={item} miVoto={misVotosEnc[item.id]}
@@ -483,7 +495,8 @@ export default function Feed({ perfil: perfilProp }) {
                 textoComentario={textoComentario[item.id] || ''}
                 onVotar={votarEncuesta} onToggleComentarios={toggleComentarios}
                 onComentarChange={t => setTextoComentario(prev => ({ ...prev, [item.id]:t }))}
-                onComentar={comentar} iniciales={iniciales} perfil={perfil} />
+                onComentar={comentar} iniciales={iniciales} perfil={perfil}
+              onBorrarComentario={borrarComentario} usuario={usuario} />
             )}
             {item.tipo === 'comparacion' && (
               <CardComparacion item={item} miVoto={misVotosFoto[item.id]}
@@ -491,7 +504,8 @@ export default function Feed({ perfil: perfilProp }) {
                 textoComentario={textoComentario[item.id] || ''}
                 onVotar={votarFoto} onToggleComentarios={toggleComentarios}
                 onComentarChange={t => setTextoComentario(prev => ({ ...prev, [item.id]:t }))}
-                onComentar={comentar} iniciales={iniciales} perfil={perfil} />
+                onComentar={comentar} iniciales={iniciales} perfil={perfil}
+              onBorrarComentario={borrarComentario} usuario={usuario} />
             )}
           </div>
         ))
@@ -535,7 +549,7 @@ function CardHeader({ item, usuario, onEliminar }) {
   )
 }
 
-function CardPublicacion({ item, miReac, reacs, abierto, coms, textoComentario, onReaccionar, onToggleComentarios, onComentarChange, onComentar, iniciales, perfil }) {
+function CardPublicacion({ item, miReac, reacs, abierto, coms, textoComentario, onReaccionar, onToggleComentarios, onComentarChange, onComentar, iniciales, perfil, onBorrarComentario, usuario }) {
   return (
     <>
       <div style={{ padding:'0 20px 12px' }}>
@@ -569,7 +583,8 @@ function CardPublicacion({ item, miReac, reacs, abierto, coms, textoComentario, 
       </div>
       <SeccionComentarios abierto={abierto} coms={coms} textoComentario={textoComentario}
         onComentarChange={onComentarChange} onComentar={e => onComentar(e, item.id)}
-        iniciales={iniciales} perfil={perfil} />
+        iniciales={iniciales} perfil={perfil}
+        onBorrarComentario={onBorrarComentario} usuario={usuario} />
     </>
   )
 }
@@ -612,7 +627,8 @@ function CardEncuesta({ item, miVoto, abierto, coms, textoComentario, onVotar, o
       </div>
       <SeccionComentarios abierto={abierto} coms={coms} textoComentario={textoComentario}
         onComentarChange={onComentarChange} onComentar={e => onComentar(e, item.id)}
-        iniciales={iniciales} perfil={perfil} />
+        iniciales={iniciales} perfil={perfil}
+        onBorrarComentario={onBorrarComentario} usuario={usuario} />
     </>
   )
 }
@@ -682,21 +698,32 @@ function CardComparacion({ item, miVoto, abierto, coms, textoComentario, onVotar
       </div>
       <SeccionComentarios abierto={abierto} coms={coms} textoComentario={textoComentario}
         onComentarChange={onComentarChange} onComentar={e => onComentar(e, item.id)}
-        iniciales={iniciales} perfil={perfil} />
+        iniciales={iniciales} perfil={perfil}
+        onBorrarComentario={onBorrarComentario} usuario={usuario} />
     </>
   )
 }
 
-function SeccionComentarios({ abierto, coms, textoComentario, onComentarChange, onComentar, iniciales, perfil }) {
+function SeccionComentarios({ abierto, coms, textoComentario, onComentarChange, onComentar, iniciales, perfil, onBorrarComentario, usuario }) {
   if (!abierto) return null
   return (
     <div style={{ padding:'12px 20px 16px', borderTop:'1px solid var(--border-subtle)' }}>
       {coms.map(com => (
         <div key={com.id} style={{ display:'flex', gap:10, alignItems:'flex-start', marginBottom:10 }}>
           <Avatar texto={com.profiles?.nombre?.[0]?.toUpperCase()||'?'} foto={com.profiles?.foto_perfil_url} size={32} />
-          <div style={{ background:'var(--surface-2)', border:'1px solid var(--border-subtle)', borderRadius:'var(--r-md)', padding:'8px 12px', flex:1 }}>
+          <div style={{ background:'var(--surface-2)', border:'1px solid var(--border-subtle)', borderRadius:'var(--r-md)', padding:'8px 12px', flex:1, position:'relative' }}>
             <p style={{ margin:'0 0 3px', fontWeight:600, fontSize:13, color:'var(--accent-bright)' }}>{com.profiles?.nombre||'Estudiante'}</p>
             <p style={{ margin:0, fontSize:14, color:'var(--ink-secondary)', lineHeight:1.5 }}>{com.contenido}</p>
+            {com.user_id === usuario?.id && (
+              <button onClick={() => onBorrarComentario(com.id)} style={{
+                position:'absolute', top:6, right:8, background:'none', border:'none',
+                cursor:'pointer', color:'var(--ink-muted)', padding:2, borderRadius:'var(--r-sm)',
+                display:'flex', alignItems:'center', transition:'color 150ms ease'
+              }}
+                onMouseEnter={e => e.currentTarget.style.color='var(--danger)'}
+                onMouseLeave={e => e.currentTarget.style.color='var(--ink-muted)'}
+              ><X size={13} /></button>
+            )}
           </div>
         </div>
       ))}
