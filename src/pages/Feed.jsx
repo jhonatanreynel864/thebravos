@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Heart, ThumbsDown, MessageCircle, X, Image as ImageIcon, Send, FileText, BarChart3, Images } from 'lucide-react'
 
-export default function Feed({ perfil: perfilProp }) {
+export default function Feed({ perfil: perfilProp, onVerPerfil }) {
   const { usuario } = useAuth()
   const [items, setItems] = useState([])
   const [perfil, setPerfil] = useState(perfilProp || null)
@@ -478,7 +478,7 @@ export default function Feed({ perfil: perfilProp }) {
       ) : (
         items.map((item, idx) => (
           <div key={`${item.tipo}-${item.id}`} className="feed-card" style={{ animationDelay:`${idx*30}ms` }}>
-            <CardHeader item={item} usuario={usuario} onEliminar={eliminar} />
+            <CardHeader item={item} usuario={usuario} onEliminar={eliminar} onVerPerfil={onVerPerfil} />
             {item.tipo === 'publicacion' && (
               <CardPublicacion item={item} miReac={misReacciones[item.id]}
                 reacs={reacciones[item.id] || { corazon:0, nomeGusta:0 }}
@@ -514,7 +514,7 @@ export default function Feed({ perfil: perfilProp }) {
   )
 }
 
-function CardHeader({ item, usuario, onEliminar }) {
+function CardHeader({ item, usuario, onEliminar, onVerPerfil }) {
   const nombres = { publicacion:'Publicacion', encuesta:'Encuesta', comparacion:'Fotos' }
   const colores = {
     publicacion: { bg:'rgba(37,99,235,0.1)', color:'#60a5fa' },
@@ -529,7 +529,11 @@ function CardHeader({ item, usuario, onEliminar }) {
         <Avatar texto={ini} foto={item.profiles?.foto_perfil_url} />
         <div>
           <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
-            <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>
+            <p onClick={() => onVerPerfil && item.profiles?.id && onVerPerfil(item.profiles.id)}
+              style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14, cursor: onVerPerfil ? 'pointer' : 'default', transition:'color 150ms ease' }}
+              onMouseEnter={e => { if(onVerPerfil) e.currentTarget.style.color='var(--accent-bright)' }}
+              onMouseLeave={e => { if(onVerPerfil) e.currentTarget.style.color='var(--ink-primary)' }}
+            >
               {item.profiles?.nombre || 'Estudiante'}
             </p>
             <span className="tipo-badge" style={{ background:colores[item.tipo].bg, color:colores[item.tipo].color }}>

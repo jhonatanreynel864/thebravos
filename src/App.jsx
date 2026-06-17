@@ -148,12 +148,13 @@ export default function App() {
   const [totalNotificaciones, setTotalNotificaciones] = useState(0)
   const [totalMensajes, setTotalMensajes] = useState(0)
   const [tema, setTema] = useState(() => localStorage.getItem('tema') || 'oscuro')
+  const [perfilUsuarioId, setPerfilUsuarioId] = useState(null)
   const [carrerasGuardadas, setCarrerasGuardadas] = useState([])
   const [logros, setLogros] = useState([])
   const [busqueda, setBusqueda] = useState('')
   const [busquedaActiva, setBusquedaActiva] = useState(false)
   const [resultadosBusqueda, setResultadosBusqueda] = useState([])
-  const [perfilUsuarioId, setPerfilUsuarioId] = useState(null)
+  
 
   useEffect(() => {
     if (!usuario?.id) return
@@ -447,7 +448,7 @@ export default function App() {
           {/* Contenido central */}
           <main style={{ minWidth:0 }}>
             {vista === 'feed' && !perfilUsuarioId && <Feed perfil={perfil} onVerPerfil={setPerfilUsuarioId} />}
-{vista === 'feed' && perfilUsuarioId && <PerfilUsuario usuarioId={perfilUsuarioId} onVolver={() => setPerfilUsuarioId(null)} />}
+            {vista === 'feed' && perfilUsuarioId && <PerfilUsuario usuarioId={perfilUsuarioId} onVolver={() => setPerfilUsuarioId(null)} />}
             {vista === 'perfil' && (
               <Perfil onVolver={() => setVista('feed')} onActualizar={setPerfil} tema={tema} onToggleTema={toggleTema} />
             )}
