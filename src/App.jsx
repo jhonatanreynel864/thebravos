@@ -9,7 +9,7 @@ import Explorar from './pages/Explorar'
 import Mensajes from './pages/Mensajes'
 import Notificaciones from './pages/Notificaciones'
 import PerfilUsuario from './pages/PerfilUsuario'
-import { Home, Compass, MessageCircle, Bell, Users, User, Sun, Moon, Search, Sparkles, Trophy, GraduationCap, Award, BarChart3, FileText } from 'lucide-react'
+import { Home, Compass, MessageCircle, Bell, Users, User, Sun, Moon, Search, Sparkles, Trophy, GraduationCap, Award, BarChart3, FileText, Menu, X as XIcon } from 'lucide-react'
 
 const getCss = (tema) => `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
@@ -125,9 +125,60 @@ const getCss = (tema) => `
     .layout-grid { grid-template-columns: 240px 1fr !important; }
   }
   @media (max-width: 768px) {
-    .layout-grid { grid-template-columns: 1fr !important; }
+    .layout-grid { grid-template-columns: 1fr !important; padding: 12px !important; }
     .sidebar-left { display: none !important; }
     .navbar-search { display: none !important; }
+    .navbar-logo-text { display: none !important; }
+    .mobile-bottom-nav { display: flex !important; }
+    .mobile-menu-btn { display: flex !important; }
+  }
+  @media (min-width: 769px) {
+    .mobile-bottom-nav { display: none !important; }
+    .mobile-menu-btn { display: none !important; }
+  }
+
+  .mobile-bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+    background: var(--surface-1); border-top: 1px solid var(--border-subtle);
+    padding: 8px 4px calc(8px + env(safe-area-inset-bottom));
+    justify-content: space-around; align-items: center;
+  }
+  .mobile-bottom-nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    background: none; border: none; cursor: pointer; padding: 6px 8px;
+    color: var(--ink-tertiary); font-family: 'DM Sans'; font-size: 10px;
+    font-weight: 500; position: relative; border-radius: var(--r-md);
+    transition: color 150ms ease;
+  }
+  .mobile-bottom-nav-item.active { color: var(--accent-bright); }
+  .mobile-badge {
+    position: absolute; top:2px; right:6px;
+    background: var(--danger); color:#fff; font-size:9px; font-weight:700;
+    min-width:14px; height:14px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center; padding:0 3px;
+  }
+
+  .mobile-menu-btn {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--border-subtle); background: var(--surface-2);
+    cursor: pointer; align-items: center; justify-content: center;
+    color: var(--ink-secondary); flex-shrink: 0;
+  }
+
+  .mobile-drawer-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 250;
+  }
+  .mobile-drawer {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px;
+    background: var(--surface-1); z-index: 251; overflow-y: auto;
+    box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+    animation: slideInDrawer 200ms var(--ease-out) both;
+  }
+  @keyframes slideInDrawer { from { transform: translateX(-100%); } to { transform: translateX(0); } }
+
+  body.con-bottom-nav { padding-bottom: 0; }
+  @media (max-width: 768px) {
+    .main-content-mobile { padding-bottom: 76px; }
   }
 `
 
@@ -149,6 +200,7 @@ export default function App() {
   const [totalMensajes, setTotalMensajes] = useState(0)
   const [tema, setTema] = useState(() => localStorage.getItem('tema') || 'oscuro')
   const [perfilUsuarioId, setPerfilUsuarioId] = useState(null)
+  const [menuMovilAbierto, setMenuMovilAbierto] = useState(false)
   const [carrerasGuardadas, setCarrerasGuardadas] = useState([])
   const [logros, setLogros] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -298,12 +350,15 @@ export default function App() {
         <header style={{ background:'var(--surface-1)', borderBottom:'1px solid var(--border-subtle)', position:'sticky', top:0, zIndex:100, width:'100%' }}>
           <div style={{ maxWidth:1400, margin:'0 auto', padding:'0 24px', display:'flex', alignItems:'center', justifyContent:'space-between', height:60, gap:16 }}>
 
-            {/* Logo */}
+            {/* Logo + Menu movil */}
             <div style={{ display:'flex', alignItems:'center', gap:10, flexShrink:0 }}>
+              <button className="mobile-menu-btn" style={{ display:'none' }} onClick={() => setMenuMovilAbierto(true)}>
+                <Menu size={18} />
+              </button>
               <div style={{ width:36, height:36, borderRadius:'50%', background:'#2563eb', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, boxShadow:'0 0 12px rgba(37,99,235,0.4)' }}>
                 <span style={{ color:'#fff', fontWeight:900, fontSize:'0.6rem', textAlign:'center', lineHeight:1.15 }}>the<br/>bravos</span>
               </div>
-              <span style={{ fontFamily:'DM Sans', fontWeight:700, fontSize:17, color:'var(--ink-primary)', letterSpacing:'-0.3px' }}>the bravos</span>
+              <span className="navbar-logo-text" style={{ fontFamily:'DM Sans', fontWeight:700, fontSize:17, color:'var(--ink-primary)', letterSpacing:'-0.3px' }}>the bravos</span>
             </div>
 
             {/* Buscador */}
