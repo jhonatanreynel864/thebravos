@@ -25,14 +25,17 @@ export default function Amigos({ onCerrar, embebido }) {
 
   async function cargarSugeridos() {
     setCargandoSugeridos(true)
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, nombre, carrera, foto_perfil_url')
       .neq('id', usuario.id)
       .order('created_at', { ascending: false })
       .limit(50)
+    console.log('Datos crudos de sugeridos:', data)
+    console.log('Error si hay:', error)
     if (data) {
       const unicos = Array.from(new Map(data.map(p => [p.id, p])).values())
+      console.log('Despues de quitar duplicados:', unicos)
       setSugeridos(unicos)
     }
     setCargandoSugeridos(false)
