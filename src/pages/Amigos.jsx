@@ -21,7 +21,7 @@ export default function Amigos({ onCerrar, embebido }) {
     cargarSolicitudes()
     cargarBloqueados()
     cargarSugeridos()
-  }, [usuario])
+  }, [usuario?.id])
 
   async function cargarSugeridos() {
     setCargandoSugeridos(true)
