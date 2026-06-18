@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { Users, UserPlus, UserX, Search, Check, X, Shield, ShieldOff } from 'lucide-react'
+import { Users, UserPlus, UserX, Search, Check, X, Shield, ShieldOff, Sparkles } from 'lucide-react'
 
 export default function Amigos({ onCerrar, embebido }) {
   const { usuario } = useAuth()
@@ -10,10 +10,10 @@ export default function Amigos({ onCerrar, embebido }) {
   const [amigos, setAmigos] = useState([])
   const [solicitudes, setSolicitudes] = useState([])
   const [bloqueados, setBloqueados] = useState([])
-  const [cargando, setCargando] = useState(false)
-  const [tab, setTab] = useState('amigos')
   const [sugeridos, setSugeridos] = useState([])
   const [cargandoSugeridos, setCargandoSugeridos] = useState(false)
+  const [cargando, setCargando] = useState(false)
+  const [tab, setTab] = useState('amigos')
 
   useEffect(() => {
     if (!usuario?.id) return
@@ -22,24 +22,6 @@ export default function Amigos({ onCerrar, embebido }) {
     cargarBloqueados()
     cargarSugeridos()
   }, [usuario?.id])
-
-  async function cargarSugeridos() {
-    setCargandoSugeridos(true)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, nombre, carrera, foto_perfil_url')
-      .neq('id', usuario.id)
-      .order('created_at', { ascending: false })
-      .limit(50)
-    console.log('Datos crudos de sugeridos:', data)
-    console.log('Error si hay:', error)
-    if (data) {
-      const unicos = Array.from(new Map(data.map(p => [p.id, p])).values())
-      console.log('Despues de quitar duplicados:', unicos)
-      setSugeridos(unicos)
-    }
-    setCargandoSugeridos(false)
-  }
 
   async function cargarAmigos() {
     const { data } = await supabase
@@ -65,6 +47,21 @@ export default function Amigos({ onCerrar, embebido }) {
       .select('*, perfil_bloqueado:bloqueado_id(id, nombre, foto_perfil_url, carrera)')
       .eq('user_id', usuario.id)
     if (data) setBloqueados(data)
+  }
+
+  async function cargarSugeridos() {
+    setCargandoSugeridos(true)
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, nombre, carrera, foto_perfil_url')
+      .neq('id', usuario.id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (data) {
+      const unicos = Array.from(new Map(data.map(p => [p.id, p])).values())
+      setSugeridos(unicos)
+    }
+    setCargandoSugeridos(false)
   }
 
   async function buscar(e) {
@@ -120,6 +117,7 @@ export default function Amigos({ onCerrar, embebido }) {
     await supabase.from('bloqueos').insert({ user_id: usuario.id, bloqueado_id: usuarioId })
     cargarAmigos(); cargarBloqueados()
     setResultados(prev => prev.filter(p => p.id !== usuarioId))
+    setSugeridos(prev => prev.filter(p => p.id !== usuarioId))
   }
 
   async function desbloquearUsuario(bloqueoId) {
@@ -137,6 +135,9 @@ export default function Amigos({ onCerrar, embebido }) {
     { id:'buscar', label:'Buscar' },
     { id:'bloqueados', label:`Bloqueados${bloqueados.length > 0 ? ` (${bloqueados.length})` : ''}` },
   ]
+
+  const bloqueadosIds = bloqueados.map(b => b.bloqueado_id)
+  const sugeridosFiltrados = sugeridos.filter(p => !bloqueadosIds.includes(p.id))
 
   const contenido = (
     <div>
@@ -209,6 +210,52 @@ export default function Amigos({ onCerrar, embebido }) {
             </div>
           )}
 
+          {/* Sugeridos */}
+          {tab === 'sugeridos' && (
+            <div>
+              {cargandoSugeridos ? (
+                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
+                  Cargando...
+                </div>
+              ) : sugeridosFiltrados.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
+                  <Sparkles size={40} style={{ margin:'0 auto 12px', opacity:0.3, display:'block' }} />
+                  No hay usuarios para sugerir todavia.
+                </div>
+              ) : sugeridosFiltrados.map(perfil => {
+                const yaEsAmigo = amigos.some(a =>
+                  (a.user_id === usuario.id && a.amigo_id === perfil.id) ||
+                  (a.amigo_id === usuario.id && a.user_id === perfil.id)
+                )
+                return (
+                  <div key={perfil.id} className="amigo-row">
+                    <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
+                    <div style={{ flex:1 }}>
+                      <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
+                      <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                    </div>
+                    <div style={{ display:'flex', gap:6 }}>
+                      {yaEsAmigo ? (
+                        <span style={{ fontSize:12, color:'var(--success)', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
+                          <Check size={13} /> Amigos
+                        </span>
+                      ) : perfil.solicitudEnviada ? (
+                        <span style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Enviada</span>
+                      ) : (
+                        <button onClick={() => enviarSolicitudSugerido(perfil.id)} className="accion-btn accion-btn-primary">
+                          <UserPlus size={13} /> Agregar
+                        </button>
+                      )}
+                      <button onClick={() => bloquearUsuario(perfil.id)} className="accion-btn accion-btn-danger">
+                        <Shield size={13} /> Bloquear
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+
           {/* Solicitudes */}
           {tab === 'solicitudes' && (
             <div>
@@ -241,203 +288,6 @@ export default function Amigos({ onCerrar, embebido }) {
             </div>
           )}
 
-{/* Sugeridos */}
-          {tab === 'sugeridos' && (
-            <div>
-              {cargandoSugeridos ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  Cargando...
-                </div>
-              ) : sugeridos.filter(p => !bloqueados.some(b => b.bloqueado_id === p.id)).length === 0 ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  <Users size={40} style={{ margin:'0 auto 12px', opacity:0.3, display:'block' }} />
-                  No hay usuarios para sugerir todavia.
-                </div>
-              ) : sugeridos
-                  .filter(p => !bloqueados.some(b => b.bloqueado_id === p.id))
-                  .map(perfil => {
-                    const yaEsAmigo = amigos.some(a =>
-                      (a.user_id === usuario.id && a.amigo_id === perfil.id) ||
-                      (a.amigo_id === usuario.id && a.user_id === perfil.id)
-                    )
-                    const yaTieneSolicitud = perfil.solicitudEnviada
-                    return (
-                      <div key={perfil.id} className="amigo-row">
-                        <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                        <div style={{ flex:1 }}>
-                          <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                          <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
-                        </div>
-                        <div style={{ display:'flex', gap:6 }}>
-                          {yaEsAmigo ? (
-                            <span style={{ fontSize:12, color:'var(--success)', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
-                              <Check size={13} /> Amigos
-                            </span>
-                          ) : yaTieneSolicitud ? (
-                            <span style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Solicitud enviada</span>
-                          ) : (
-                            <button onClick={() => enviarSolicitudSugerido(perfil.id)} className="accion-btn accion-btn-primary">
-                              <UserPlus size={13} /> Agregar
-                            </button>
-                          )}
-                          <button onClick={() => bloquearUsuario(perfil.id)} className="accion-btn accion-btn-danger">
-                            <Shield size={13} /> Bloquear
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-            </div>
-          )}
-
-          {/* Sugeridos */}
-          {tab === 'sugeridos' && (
-            <div>
-              {cargandoSugeridos ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  Cargando...
-                </div>
-              ) : sugeridos.filter(p => !bloqueados.some(b => b.bloqueado_id === p.id)).length === 0 ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  <Users size={40} style={{ margin:'0 auto 12px', opacity:0.3, display:'block' }} />
-                  No hay usuarios para sugerir todavia.
-                </div>
-              ) : sugeridos
-                  .filter(p => !bloqueados.some(b => b.bloqueado_id === p.id))
-                  .map(perfil => {
-                    const yaEsAmigo = amigos.some(a =>
-                      (a.user_id === usuario.id && a.amigo_id === perfil.id) ||
-                      (a.amigo_id === usuario.id && a.user_id === perfil.id)
-                    )
-                    const yaTieneSolicitud = perfil.solicitudEnviada
-                    return (
-                      <div key={perfil.id} className="amigo-row">
-                        <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                        <div style={{ flex:1 }}>
-                          <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                          <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
-                        </div>
-                        <div style={{ display:'flex', gap:6 }}>
-                          {yaEsAmigo ? (
-                            <span style={{ fontSize:12, color:'var(--success)', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
-                              <Check size={13} /> Amigos
-                            </span>
-                          ) : yaTieneSolicitud ? (
-                            <span style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Solicitud enviada</span>
-                          ) : (
-                            <button onClick={() => enviarSolicitudSugerido(perfil.id)} className="accion-btn accion-btn-primary">
-                              <UserPlus size={13} /> Agregar
-                            </button>
-                          )}
-                          <button onClick={() => bloquearUsuario(perfil.id)} className="accion-btn accion-btn-danger">
-                            <Shield size={13} /> Bloquear
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-            </div>
-          )}
-
-        {/* Sugeridos */}
-          {tab === 'sugeridos' && (
-            <div>
-              {cargandoSugeridos ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  Cargando...
-                </div>
-              ) : sugeridos.filter(p => !bloqueados.some(b => b.bloqueado_id === p.id)).length === 0 ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  <Users size={40} style={{ margin:'0 auto 12px', opacity:0.3, display:'block' }} />
-                  No hay usuarios para sugerir todavia.
-                </div>
-              ) : sugeridos
-                  .filter(p => !bloqueados.some(b => b.bloqueado_id === p.id))
-                  .map(perfil => {
-                    const yaEsAmigo = amigos.some(a =>
-                      (a.user_id === usuario.id && a.amigo_id === perfil.id) ||
-                      (a.amigo_id === usuario.id && a.user_id === perfil.id)
-                    )
-                    const yaTieneSolicitud = perfil.solicitudEnviada
-                    return (
-                      <div key={perfil.id} className="amigo-row">
-                        <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                        <div style={{ flex:1 }}>
-                          <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                          <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
-                        </div>
-                        <div style={{ display:'flex', gap:6 }}>
-                          {yaEsAmigo ? (
-                            <span style={{ fontSize:12, color:'var(--success)', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
-                              <Check size={13} /> Amigos
-                            </span>
-                          ) : yaTieneSolicitud ? (
-                            <span style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Solicitud enviada</span>
-                          ) : (
-                            <button onClick={() => enviarSolicitudSugerido(perfil.id)} className="accion-btn accion-btn-primary">
-                              <UserPlus size={13} /> Agregar
-                            </button>
-                          )}
-                          <button onClick={() => bloquearUsuario(perfil.id)} className="accion-btn accion-btn-danger">
-                            <Shield size={13} /> Bloquear
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-            </div>
-          )}
-
-         {/* Sugeridos */}
-          {tab === 'sugeridos' && (
-            <div>
-              {cargandoSugeridos ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  Cargando...
-                </div>
-              ) : sugeridos.filter(p => !bloqueados.some(b => b.bloqueado_id === p.id)).length === 0 ? (
-                <div style={{ textAlign:'center', padding:'32px 0', color:'var(--ink-tertiary)', fontSize:14 }}>
-                  <Users size={40} style={{ margin:'0 auto 12px', opacity:0.3, display:'block' }} />
-                  No hay usuarios para sugerir todavia.
-                </div>
-              ) : sugeridos
-                  .filter(p => !bloqueados.some(b => b.bloqueado_id === p.id))
-                  .map(perfil => {
-                    const yaEsAmigo = amigos.some(a =>
-                      (a.user_id === usuario.id && a.amigo_id === perfil.id) ||
-                      (a.amigo_id === usuario.id && a.user_id === perfil.id)
-                    )
-                    const yaTieneSolicitud = perfil.solicitudEnviada
-                    return (
-                      <div key={perfil.id} className="amigo-row">
-                        <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                        <div style={{ flex:1 }}>
-                          <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                          <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
-                        </div>
-                        <div style={{ display:'flex', gap:6 }}>
-                          {yaEsAmigo ? (
-                            <span style={{ fontSize:12, color:'var(--success)', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
-                              <Check size={13} /> Amigos
-                            </span>
-                          ) : yaTieneSolicitud ? (
-                            <span style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Solicitud enviada</span>
-                          ) : (
-                            <button onClick={() => enviarSolicitudSugerido(perfil.id)} className="accion-btn accion-btn-primary">
-                              <UserPlus size={13} /> Agregar
-                            </button>
-                          )}
-                          <button onClick={() => bloquearUsuario(perfil.id)} className="accion-btn accion-btn-danger">
-                            <Shield size={13} /> Bloquear
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-            </div>
-          )}
-
-          
           {/* Buscar */}
           {tab === 'buscar' && (
             <div>
