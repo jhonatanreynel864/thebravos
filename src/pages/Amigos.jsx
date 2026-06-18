@@ -31,7 +31,10 @@ export default function Amigos({ onCerrar, embebido }) {
       .neq('id', usuario.id)
       .order('created_at', { ascending: false })
       .limit(50)
-    if (data) setSugeridos(data)
+    if (data) {
+      const unicos = Array.from(new Map(data.map(p => [p.id, p])).values())
+      setSugeridos(unicos)
+    }
     setCargandoSugeridos(false)
   }
 
