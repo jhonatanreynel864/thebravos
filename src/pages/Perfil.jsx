@@ -104,6 +104,7 @@ export default function Perfil({ onVolver, onActualizar, tema, onToggleTema }) {
   return (
     <div style={{ minHeight:'100vh', width:'100%', background:'var(--surface-base)', fontFamily:'DM Sans, sans-serif', color:'var(--ink-primary)' }}>
       <style>{`
+        input[type="date"] { -webkit-appearance:none; appearance:none; max-width:100%; }
         .perfil-input { width:100%; box-sizing:border-box; padding:10px 14px; border:1px solid var(--border-subtle); border-radius:var(--r-md); background:var(--surface-2); color:var(--ink-primary); font-family:DM Sans; font-size:14px; outline:none; transition:border-color 150ms ease,box-shadow 150ms ease; }
         .perfil-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-muted); }
         .perfil-input::placeholder { color:var(--ink-muted); }
@@ -137,7 +138,7 @@ export default function Perfil({ onVolver, onActualizar, tema, onToggleTema }) {
         )}
       </header>
 
-      <div style={{ maxWidth:640, margin:'0 auto', padding:'32px 24px' }}>
+      <div style={{ maxWidth:640, margin:'0 auto', padding:'32px 24px', boxSizing:'border-box', width:'100%' }}>
 
         {/* Tarjeta visual */}
         <div style={{ background:'var(--surface-1)', border:'1px solid var(--border-subtle)', borderRadius:'var(--r-xl)', padding:'32px 24px', marginBottom:20, textAlign:'center' }}>
@@ -189,7 +190,7 @@ export default function Perfil({ onVolver, onActualizar, tema, onToggleTema }) {
         </div>
 
         {/* Formulario */}
-        <div style={{ background:'var(--surface-1)', border:'1px solid var(--border-subtle)', borderRadius:'var(--r-xl)', padding:'24px' }}>
+        <div style={{ background:'var(--surface-1)', border:'1px solid var(--border-subtle)', borderRadius:'var(--r-xl)', padding:'24px', boxSizing:'border-box', width:'100%', overflow:'hidden' }}>
           <p style={{ fontSize:12, fontWeight:600, color:'var(--ink-tertiary)', letterSpacing:'0.05em', marginBottom:20 }}>EDITAR INFORMACION</p>
 
           {/* Tema */}
