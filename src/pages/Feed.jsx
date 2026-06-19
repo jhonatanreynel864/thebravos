@@ -593,7 +593,7 @@ function CardPublicacion({ item, miReac, reacs, abierto, coms, textoComentario, 
   )
 }
 
-function CardEncuesta({ item, miVoto, abierto, coms, textoComentario, onVotar, onToggleComentarios, onComentarChange, onComentar, iniciales, perfil }) {
+function CardEncuesta({ item, miVoto, abierto, coms, textoComentario, onVotar, onToggleComentarios, onComentarChange, onComentar, iniciales, perfil, onBorrarComentario, usuario }) {
   const yaVote = miVoto !== undefined
   const conteos = item.conteos || item.opciones.map(() => 0)
   const totalVotos = item.totalVotos || 0
@@ -637,7 +637,7 @@ function CardEncuesta({ item, miVoto, abierto, coms, textoComentario, onVotar, o
   )
 }
 
-function CardComparacion({ item, miVoto, abierto, coms, textoComentario, onVotar, onToggleComentarios, onComentarChange, onComentar, iniciales, perfil }) {
+function CardComparacion({ item, miVoto, abierto, coms, textoComentario, onVotar, onToggleComentarios, onComentarChange, onComentar, iniciales, perfil, onBorrarComentario, usuario }) {
   const total = (item.votos_a||0) + (item.votos_b||0)
   const pctA = total > 0 ? Math.round((item.votos_a/total)*100) : 50
   const pctB = total > 0 ? Math.round((item.votos_b/total)*100) : 50
