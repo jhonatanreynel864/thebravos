@@ -57,10 +57,25 @@ export default function Login() {
   }
 
   return (
-    <div style={{
+    <div className="login-container" style={{
       minHeight:'100vh', width:'100%', display:'flex',
       background:'var(--surface-base)', fontFamily:'DM Sans, sans-serif'
     }}>
+      <style>{`
+        @media (max-width: 768px) {
+          .login-container { flex-direction: column !important; }
+          .login-panel-izq { 
+            flex: none !important; 
+            min-height: 240px !important; 
+            padding: 32px 24px !important;
+          }
+          .login-panel-der { 
+            max-width: 100% !important; 
+            padding: 32px 24px !important;
+            flex: 1 !important;
+          }
+        }
+      `}</style>
       {/* Modal Términos */}
       {verTerminos && (
         <Modal titulo="Términos y Condiciones" onCerrar={() => setVerTerminos(false)}>
@@ -116,7 +131,7 @@ export default function Login() {
       )}
 
       {/* Panel izquierdo */}
-      <div style={{
+      <div className="login-panel-izq" style={{
         flex:1, display:'flex', flexDirection:'column',
         alignItems:'center', justifyContent:'center', padding:'48px',
         background:`linear-gradient(rgba(8,12,16,0.65), rgba(8,12,16,0.80)), url('/campus.jpg') center/cover no-repeat`,
@@ -141,7 +156,7 @@ export default function Login() {
       </div>
 
       {/* Panel derecho */}
-      <div style={{
+      <div className="login-panel-der" style={{
         width:'100%', maxWidth:460, display:'flex', flexDirection:'column',
         alignItems:'center', justifyContent:'center',
         padding:'48px 40px', background:'var(--surface-1)',
