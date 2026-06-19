@@ -501,7 +501,7 @@ export default function App() {
           </aside>
 
           {/* Contenido central */}
-          <main style={{ minWidth:0 }}>
+          <main style={{ minWidth:0 }} className="main-content-mobile">
             {vista === 'feed' && !perfilUsuarioId && <Feed perfil={perfil} onVerPerfil={setPerfilUsuarioId} />}
             {vista === 'feed' && perfilUsuarioId && <PerfilUsuario usuarioId={perfilUsuarioId} onVolver={() => setPerfilUsuarioId(null)} />}
             {vista === 'perfil' && (
@@ -602,6 +602,77 @@ export default function App() {
             </div>
           </aside>
         </div>
+
+        {/* Drawer movil */}
+        {menuMovilAbierto && (
+          <>
+            <div className="mobile-drawer-overlay" onClick={() => setMenuMovilAbierto(false)} />
+            <div className="mobile-drawer">
+              <div style={{ padding:'20px' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+                  <span style={{ fontFamily:'DM Sans', fontWeight:700, fontSize:16, color:'var(--ink-primary)' }}>Menu</span>
+                  <button onClick={() => setMenuMovilAbierto(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--ink-tertiary)' }}>
+                    <XIcon size={20} />
+                  </button>
+                </div>
+
+                {/* Perfil card */}
+                <div style={{ textAlign:'center', marginBottom:20 }}>
+                  <div style={{ position:'relative', width:64, margin:'0 auto 10px' }}>
+                    {perfil?.foto_perfil_url ? (
+                      <img src={perfil.foto_perfil_url} alt="perfil" style={{ width:64, height:64, borderRadius:'50%', objectFit:'cover', display:'block', border:'2px solid var(--border-default)' }} />
+                    ) : (
+                      <div style={{ width:64, height:64, borderRadius:'50%', background:'var(--accent-muted)', border:'2px solid var(--border-default)', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--accent-bright)', fontWeight:700, fontSize:20, fontFamily:'DM Mono' }}>{iniciales}</div>
+                    )}
+                  </div>
+                  <p style={{ fontSize:15, fontWeight:700, color:'var(--ink-primary)', marginBottom:2 }}>{perfil?.nombre||'Estudiante'}</p>
+                  <p style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Pascual Bravo</p>
+                  <span className="estudiante-badge">Estudiante</span>
+                </div>
+
+                <div style={{ height:1, background:'var(--border-subtle)', margin:'4px 0 12px' }}/>
+
+                <nav style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                  {NAV_ITEMS.map(item => {
+                    const Icon = item.icon
+                    return (
+                      <button key={item.id} onClick={() => { setVista(item.id); setMenuMovilAbierto(false); setPerfilUsuarioId(null) }}
+                        className={`side-nav-item${vista===item.id?' active':''}`}>
+                        <span className="nav-icon"><Icon size={18} /></span>
+                        {item.label}
+                        {item.id === 'amigos' && totalAmigos > 0 && <span className="side-nav-badge">{totalAmigos}</span>}
+                        {item.id === 'notificaciones' && totalNotificaciones > 0 && <span className="side-nav-badge">{totalNotificaciones}</span>}
+                        {item.id === 'mensajes' && totalMensajes > 0 && <span className="side-nav-badge">{totalMensajes}</span>}
+                      </button>
+                    )
+                  })}
+                </nav>
+
+                <div style={{ height:1, background:'var(--border-subtle)', margin:'12px 0' }}/>
+
+                <button className="salir-side-btn" onClick={cerrarSesion}>Cerrar sesion</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Barra inferior movil */}
+        <nav className="mobile-bottom-nav">
+          {NAV_ITEMS.filter(i => ['feed','explorar','mensajes','notificaciones','perfil'].includes(i.id)).map(item => {
+            const Icon = item.icon
+            return (
+              <button key={item.id} onClick={() => { setVista(item.id); setPerfilUsuarioId(null) }}
+                className={`mobile-bottom-nav-item${vista===item.id?' active':''}`}>
+                <div style={{ position:'relative' }}>
+                  <Icon size={20} />
+                  {item.id === 'notificaciones' && totalNotificaciones > 0 && <span className="mobile-badge">{totalNotificaciones}</span>}
+                  {item.id === 'mensajes' && totalMensajes > 0 && <span className="mobile-badge">{totalMensajes}</span>}
+                </div>
+                {item.label}
+              </button>
+            )
+          })}
+        </nav>
       </div>
     </>
   )
