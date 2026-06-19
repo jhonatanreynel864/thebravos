@@ -183,17 +183,35 @@ export default function Mensajes() {
         }
         .buscar-input:focus { border-color:var(--accent); }
         .buscar-input::placeholder { color:var(--ink-muted); }
+
+        .msgs-container {
+          background:var(--surface-1);
+          border:1px solid var(--border-subtle);
+          border-radius:var(--r-xl); overflow:hidden;
+          display:grid; grid-template-columns:260px 1fr;
+          height:calc(100vh - 112px); min-height:500px;
+        }
+        .msgs-lista-panel {
+          border-right:1px solid var(--border-subtle);
+          display:flex; flex-direction:column; overflow:hidden;
+        }
+        .msgs-chat-panel { display:flex; flex-direction:column; overflow:hidden; }
+
+        @media (max-width: 768px) {
+          .msgs-container {
+            grid-template-columns: 1fr !important;
+            height: calc(100vh - 150px) !important;
+            border-radius: var(--r-lg) !important;
+            border: none !important;
+          }
+          .msgs-lista-panel.oculto-movil { display: none !important; }
+          .msgs-chat-panel.oculto-movil { display: none !important; }
+        }
       `}</style>
 
-      <div style={{
-        background:'var(--surface-1)',
-        border:'1px solid var(--border-subtle)',
-        borderRadius:'var(--r-xl)', overflow:'hidden',
-        display:'grid', gridTemplateColumns:'260px 1fr',
-        height:'calc(100vh - 112px)', minHeight:500
-      }}>
+      <div className="msgs-container">
         {/* Panel izquierdo */}
-        <div style={{ borderRight:'1px solid var(--border-subtle)', display:'flex', flexDirection:'column', overflow:'hidden' }}>
+        <div className={`msgs-lista-panel${contactoActivo ? ' oculto-movil' : ''}`}>
           <div style={{ padding:'16px', borderBottom:'1px solid var(--border-subtle)', flexShrink:0 }}>
             <h2 style={{ fontSize:15, fontWeight:700, color:'var(--ink-primary)', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
               <MessageCircle size={17} style={{ color:'var(--accent-bright)' }} /> Mensajes
@@ -254,13 +272,13 @@ export default function Mensajes() {
 
         {/* Panel derecho - Chat */}
         {!contactoActivo ? (
-          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'var(--ink-tertiary)', gap:12 }}>
+          <div className="msgs-chat-panel oculto-movil" style={{ alignItems:'center', justifyContent:'center', color:'var(--ink-tertiary)', gap:12 }}>
             <MessageCircle size={48} style={{ opacity:0.15 }} />
             <p style={{ fontSize:15, fontWeight:500, color:'var(--ink-secondary)' }}>Selecciona una conversacion</p>
             <p style={{ fontSize:13 }}>o busca un compañero para chatear</p>
           </div>
         ) : (
-          <div style={{ display:'flex', flexDirection:'column', overflow:'hidden' }}>
+          <div className="msgs-chat-panel">
             {/* Header */}
             <div style={{ padding:'12px 20px', borderBottom:'1px solid var(--border-subtle)', display:'flex', alignItems:'center', gap:12, flexShrink:0 }}>
               <button onClick={() => setContactoActivo(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--ink-tertiary)', display:'flex', padding:4, borderRadius:'var(--r-sm)', transition:'all 150ms ease' }}
