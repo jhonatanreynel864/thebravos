@@ -104,7 +104,7 @@ export default function Perfil({ onVolver, onActualizar, tema, onToggleTema }) {
   return (
     <div style={{ minHeight:'100vh', width:'100%', background:'var(--surface-base)', fontFamily:'DM Sans, sans-serif', color:'var(--ink-primary)' }}>
       <style>{`
-        .perfil-input { width:100%; padding:10px 14px; border:1px solid var(--border-subtle); border-radius:var(--r-md); background:var(--surface-2); color:var(--ink-primary); font-family:DM Sans; font-size:14px; outline:none; transition:border-color 150ms ease,box-shadow 150ms ease; }
+        .perfil-input { width:100%; box-sizing:border-box; padding:10px 14px; border:1px solid var(--border-subtle); border-radius:var(--r-md); background:var(--surface-2); color:var(--ink-primary); font-family:DM Sans; font-size:14px; outline:none; transition:border-color 150ms ease,box-shadow 150ms ease; }
         .perfil-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-muted); }
         .perfil-input::placeholder { color:var(--ink-muted); }
         .toggle-btn { flex:1; padding:10px 0; border:none; border-radius:var(--r-md); cursor:pointer; font-family:DM Sans; font-size:13px; font-weight:500; transition:all 150ms ease; }
@@ -247,7 +247,7 @@ export default function Perfil({ onVolver, onActualizar, tema, onToggleTema }) {
               <label style={labelStyle(focusField==='fecha')}>Fecha de nacimiento</label>
               <input type="date" value={fechaNacimiento}
                 onChange={e => setFechaNacimiento(e.target.value)}
-                className="perfil-input" style={{ colorScheme:'dark' }}
+                className="perfil-input" style={{ colorScheme:'dark', width:'100%', boxSizing:'border-box', maxWidth:'100%' }}
                 onFocus={() => setFocusField('fecha')} onBlur={() => setFocusField(null)} />
             </div>
 
