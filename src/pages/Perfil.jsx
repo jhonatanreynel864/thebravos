@@ -151,7 +151,7 @@ export default function Perfil({ onVolver, onActualizar, tema, onToggleTema }) {
               )}
               <div className="foto-overlay">
                 <div className="foto-overlay-content">
-                  <span style={{ fontSize:24 }}>📷</span>
+                  <span style={{ fontSize:24 }}></span>
                   <p style={{ margin:0, fontSize:11, color:'#fff', fontWeight:600 }}>{subiendoFoto ? 'Subiendo...' : 'Cambiar'}</p>
                 </div>
               </div>
