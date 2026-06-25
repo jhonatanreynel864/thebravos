@@ -150,7 +150,7 @@ export default function Login() {
             the bravos
           </h1>
           <p style={{ fontSize:15, color:'rgba(240,244,248,0.7)', lineHeight:1.6 }}>
-            La plataforma exclusiva para estudiantes del Pascual Bravo.
+            La plataforma para estudiantes universitarios.
           </p>
         </div>
       </div>
