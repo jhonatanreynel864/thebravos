@@ -5,8 +5,8 @@ const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
-export const DOMINIO_PERMITIDO = import.meta.env.VITE_DOMINIO_UNIVERSITARIO || 'pascualbravo.edu.co'
+export const DOMINIO_PERMITIDO = 'edu.co'
 
 export function esCorreoValido(email) {
-  return email.toLowerCase().endsWith('@' + DOMINIO_PERMITIDO.toLowerCase())
+  return email.toLowerCase().endsWith('.edu.co')
 }

@@ -208,7 +208,7 @@ export default function Login() {
               </>
             )}
             <Campo label="Correo institucional" value={email} onChange={setEmail}
-              placeholder={`estudiante@${DOMINIO_PERMITIDO}`} type="email"
+              placeholder="estudiante@universidad.edu.co" type="email"
               focus={focusField==='email'}
               onFocus={() => setFocusField('email')} onBlur={() => setFocusField(null)} />
             <Campo label="Contraseña" value={password} onChange={setPassword}
