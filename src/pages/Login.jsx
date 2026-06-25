@@ -147,7 +147,7 @@ export default function Login() {
             <span style={{ color:'#fff', fontWeight:900, fontSize:'1.25rem', textAlign:'center', lineHeight:1.2, letterSpacing:'-0.5px' }}>the<br/>bravos</span>
           </div>
           <h1 style={{ fontSize:32, fontWeight:700, color:'#f0f4f8', letterSpacing:'-1px', lineHeight:1.1, marginBottom:12 }}>
-            the bravos
+             bravos
           </h1>
           <p style={{ fontSize:15, color:'rgba(240,244,248,0.7)', lineHeight:1.6 }}>
             La plataforma para estudiantes universitarios.
