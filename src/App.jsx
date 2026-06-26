@@ -226,11 +226,39 @@ export default function App() {
     calcularLogros()
     cargarTotalNotificaciones()
     cargarTotalMensajes()
-    const intervalo = setInterval(() => {
-      cargarTotalNotificaciones()
-      cargarTotalMensajes()
-    }, 30000)
-    return () => clearInterval(intervalo)
+
+    // Realtime: solicitudes de amistad
+    const canalAmigos = supabase
+      .channel('notif_amigos')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'amigos',
+        filter: `amigo_id=eq.${usuario.id}`
+      }, () => { cargarTotalNotificaciones() })
+      .on('postgres_changes', {
+        event: 'DELETE', schema: 'public', table: 'amigos',
+      }, () => { cargarTotalNotificaciones() })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'amigos',
+      }, () => { cargarTotalNotificaciones() })
+      .subscribe()
+
+    // Realtime: mensajes nuevos
+    const canalMensajes = supabase
+      .channel('notif_mensajes')
+      .on('postgres_changes', {
+        event: 'INSERT', schema: 'public', table: 'mensajes',
+        filter: `receptor_id=eq.${usuario.id}`
+      }, () => { cargarTotalMensajes() })
+      .on('postgres_changes', {
+        event: 'UPDATE', schema: 'public', table: 'mensajes',
+        filter: `receptor_id=eq.${usuario.id}`
+      }, () => { cargarTotalMensajes() })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(canalAmigos)
+      supabase.removeChannel(canalMensajes)
+    }
   }, [usuario])
 
   async function cargarTotalAmigos() {
