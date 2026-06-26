@@ -144,13 +144,21 @@ const getCss = (tema) => `
     justify-content: space-around; align-items: center;
   }
   .mobile-bottom-nav-item {
-    display: flex; flex-direction: column; align-items: center; gap: 2px;
-    background: none; border: none; cursor: pointer; padding: 6px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    background: none; border: none; cursor: pointer; padding: 6px 14px;
     color: var(--ink-tertiary); font-family: 'DM Sans'; font-size: 10px;
     font-weight: 500; position: relative; border-radius: var(--r-md);
     transition: color 150ms ease;
   }
   .mobile-bottom-nav-item.active { color: var(--accent-bright); }
+  .mobile-bottom-nav-item .nav-pill {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 40px; height: 32px; border-radius: var(--r-md);
+    background: var(--accent-muted);
+    opacity: 0; transition: opacity 150ms ease;
+    pointer-events: none;
+  }
+  .mobile-bottom-nav-item.active .nav-pill { opacity: 1; }
   .mobile-badge {
     position: absolute; top:2px; right:6px;
     background: var(--danger); color:#fff; font-size:9px; font-weight:700;
@@ -660,15 +668,18 @@ export default function App() {
         <nav className="mobile-bottom-nav">
           {NAV_ITEMS.filter(i => ['feed','explorar','mensajes','notificaciones','perfil'].includes(i.id)).map(item => {
             const Icon = item.icon
+            const activo = vista === item.id
             return (
               <button key={item.id} onClick={() => { setVista(item.id); setPerfilUsuarioId(null) }}
-                className={`mobile-bottom-nav-item${vista===item.id?' active':''}`}>
-                <div style={{ position:'relative' }}>
-                  <Icon size={20} />
+                className={`mobile-bottom-nav-item${activo ? ' active' : ''}`}>
+                {/* Pill de fondo cuando está activo */}
+                <span className="nav-pill" />
+                <div style={{ position: 'relative', zIndex: 1 }}>
+                  <Icon size={20} strokeWidth={activo ? 2.5 : 1.8} />
                   {item.id === 'notificaciones' && totalNotificaciones > 0 && <span className="mobile-badge">{totalNotificaciones}</span>}
                   {item.id === 'mensajes' && totalMensajes > 0 && <span className="mobile-badge">{totalMensajes}</span>}
                 </div>
-                {item.label}
+                <span style={{ position: 'relative', zIndex: 1, fontWeight: activo ? 700 : 500 }}>{item.label}</span>
               </button>
             )
           })}
