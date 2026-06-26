@@ -366,7 +366,7 @@ export default function Feed({ perfil: perfilProp, onVerPerfil }) {
         @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
         @keyframes spin { to{transform:rotate(360deg)} }
         @keyframes modalIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
-
+        @media (max-width: 480px) { .btn-label { display:none; } }
         .feed-card { background:var(--surface-1); border:1px solid var(--border-subtle); border-radius:var(--r-xl); margin-bottom:14px; overflow:hidden; transition:border-color 200ms ease,box-shadow 200ms ease; animation:fadeUp 300ms var(--ease-out) both; }
         .feed-card:hover { border-color:var(--border-default); box-shadow:0 2px 12px rgba(0,0,0,0.06); }
 
@@ -685,18 +685,22 @@ function CardPublicacion({ item, miReac, reacs, abierto, coms, textoComentario, 
       )}
 
       {/* Botones accion */}
-      <div style={{ padding:'2px 10px 6px', display:'flex', gap:2, borderTop: (reacs.corazon > 0 || reacs.nomeGusta > 0 || coms.length > 0 || conteoReposts > 0) ? 'none' : '1px solid var(--border-subtle)' }}>
+      <div style={{ padding:'2px 10px 6px', display:'flex', gap:0, borderTop: (reacs.corazon > 0 || reacs.nomeGusta > 0 || coms.length > 0 || conteoReposts > 0) ? 'none' : '1px solid var(--border-subtle)', justifyContent:'space-between' }}>
         <button className={`reac-btn${miReac==='corazon'?' active-heart':''}`} onClick={e => onReaccionar(e, pubId, 'corazon')}>
-          <Heart size={17} fill={miReac==='corazon'?'#f43f5e':'none'} stroke={miReac==='corazon'?'#f43f5e':'currentColor'} /> Me gusta
+          <Heart size={17} fill={miReac==='corazon'?'#f43f5e':'none'} stroke={miReac==='corazon'?'#f43f5e':'currentColor'} />
+          <span className="btn-label">Me gusta</span>
         </button>
         <button className={`reac-btn${miReac==='nomeGusta'?' active-dislike':''}`} onClick={e => onReaccionar(e, pubId, 'nomeGusta')}>
-          <ThumbsDown size={17} fill={miReac==='nomeGusta'?'var(--accent-bright)':'none'} stroke={miReac==='nomeGusta'?'var(--accent-bright)':'currentColor'} /> No me gusta
+          <ThumbsDown size={17} fill={miReac==='nomeGusta'?'var(--accent-bright)':'none'} stroke={miReac==='nomeGusta'?'var(--accent-bright)':'currentColor'} />
+          <span className="btn-label">No me gusta</span>
         </button>
         <button className={`reac-btn${abierto?' active-comment':''}`} onClick={e => onToggleComentarios(e, pubId)}>
-          <MessageCircle size={17} fill={abierto?'var(--accent-bright)':'none'} stroke={abierto?'var(--accent-bright)':'currentColor'} /> Comentar
+          <MessageCircle size={17} fill={abierto?'var(--accent-bright)':'none'} stroke={abierto?'var(--accent-bright)':'currentColor'} />
+          <span className="btn-label">Comentar</span>
         </button>
-        <button className={`reac-btn${yaReposteado?' active-repost':''}`} onClick={e => onRepost(e, pubId)} style={{ marginLeft:'auto' }}>
-          <Repeat2 size={17} /> {yaReposteado ? 'Compartido' : 'Compartir'}
+        <button className={`reac-btn${yaReposteado?' active-repost':''}`} onClick={e => onRepost(e, pubId)}>
+          <Repeat2 size={17} />
+          <span className="btn-label">{yaReposteado ? 'Compartido' : 'Compartir'}</span>
         </button>
       </div>
 
