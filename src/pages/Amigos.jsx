@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Users, UserPlus, UserX, Search, Check, X, Shield, ShieldOff, Sparkles } from 'lucide-react'
+import PerfilUsuario from './PerfilUsuario'
 
 export default function Amigos({ onCerrar, embebido }) {
   const { usuario } = useAuth()
@@ -14,6 +15,7 @@ export default function Amigos({ onCerrar, embebido }) {
   const [cargandoSugeridos, setCargandoSugeridos] = useState(false)
   const [cargando, setCargando] = useState(false)
   const [tab, setTab] = useState('amigos')
+  const [perfilViendo, setPerfilViendo] = useState(null)
 
   useEffect(() => {
     if (!usuario?.id) return
@@ -139,6 +141,16 @@ export default function Amigos({ onCerrar, embebido }) {
   const bloqueadosIds = bloqueados.map(b => b.bloqueado_id)
   const sugeridosFiltrados = sugeridos.filter(p => !bloqueadosIds.includes(p.id))
 
+  // Si estamos viendo el perfil de alguien, mostramos PerfilUsuario
+  if (perfilViendo) {
+    return (
+      <PerfilUsuario
+        usuarioId={perfilViendo}
+        onVolver={() => setPerfilViendo(null)}
+      />
+    )
+  }
+
   const contenido = (
     <div>
       <style>{`
@@ -156,6 +168,8 @@ export default function Amigos({ onCerrar, embebido }) {
         .accion-btn-danger:hover { border-color:var(--danger); color:var(--danger); }
         .buscar-input { flex:1; padding:9px 14px; border:1px solid var(--border-subtle); border-radius:var(--r-md); background:var(--surface-2); color:var(--ink-primary); font-family:'DM Sans'; font-size:14px; outline:none; transition:all 150ms ease; }
         .buscar-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-muted); }
+        .perfil-link { cursor:pointer; display:flex; align-items:center; gap:12px; flex:1; min-width:0; }
+        .perfil-link:hover p:first-child { color:var(--accent-bright); text-decoration:underline; }
       `}</style>
 
       {/* Header */}
@@ -191,12 +205,14 @@ export default function Amigos({ onCerrar, embebido }) {
                 if (!perfil) return null
                 return (
                   <div key={rel.id} className="amigo-row">
-                    <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                    <div style={{ flex:1 }}>
-                      <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                      <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                    <div className="perfil-link" onClick={() => setPerfilViendo(perfil.id)}>
+                      <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14, transition:'color 150ms ease' }}>{perfil.nombre}</p>
+                        <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                      </div>
                     </div>
-                    <div style={{ display:'flex', gap:6 }}>
+                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
                       <button onClick={() => bloquearUsuario(perfil.id)} className="accion-btn accion-btn-danger">
                         <Shield size={13} /> Bloquear
                       </button>
@@ -229,12 +245,15 @@ export default function Amigos({ onCerrar, embebido }) {
                 )
                 return (
                   <div key={perfil.id} className="amigo-row">
-                    <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                    <div style={{ flex:1 }}>
-                      <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                      <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                    {/* Nombre/avatar clickeable para ver perfil */}
+                    <div className="perfil-link" onClick={() => setPerfilViendo(perfil.id)}>
+                      <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14, transition:'color 150ms ease' }}>{perfil.nombre}</p>
+                        <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                      </div>
                     </div>
-                    <div style={{ display:'flex', gap:6 }}>
+                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
                       {yaEsAmigo ? (
                         <span style={{ fontSize:12, color:'var(--success)', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
                           <Check size={13} /> Amigos
@@ -269,12 +288,14 @@ export default function Amigos({ onCerrar, embebido }) {
                 if (!perfil) return null
                 return (
                   <div key={sol.id} className="amigo-row">
-                    <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                    <div style={{ flex:1 }}>
-                      <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                      <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                    <div className="perfil-link" onClick={() => setPerfilViendo(perfil.id)}>
+                      <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14, transition:'color 150ms ease' }}>{perfil.nombre}</p>
+                        <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                      </div>
                     </div>
-                    <div style={{ display:'flex', gap:6 }}>
+                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
                       <button onClick={() => aceptarSolicitud(sol.id)} className="accion-btn accion-btn-primary">
                         <Check size={13} /> Aceptar
                       </button>
@@ -306,12 +327,14 @@ export default function Amigos({ onCerrar, embebido }) {
                 )
                 return (
                   <div key={perfil.id} className="amigo-row">
-                    <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
-                    <div style={{ flex:1 }}>
-                      <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14 }}>{perfil.nombre}</p>
-                      <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                    <div className="perfil-link" onClick={() => setPerfilViendo(perfil.id)}>
+                      <Avatar texto={iniciales(perfil.nombre)} foto={perfil.foto_perfil_url} />
+                      <div style={{ minWidth:0 }}>
+                        <p style={{ margin:0, fontWeight:600, color:'var(--ink-primary)', fontSize:14, transition:'color 150ms ease' }}>{perfil.nombre}</p>
+                        <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{perfil.carrera}</p>
+                      </div>
                     </div>
-                    <div style={{ display:'flex', gap:6 }}>
+                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
                       {yaEsAmigo ? (
                         <span style={{ fontSize:12, color:'var(--success)', fontWeight:600, display:'flex', alignItems:'center', gap:4 }}>
                           <Check size={13} /> Amigos
