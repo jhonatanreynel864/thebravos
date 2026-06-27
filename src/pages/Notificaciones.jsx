@@ -12,59 +12,37 @@ export default function Notificaciones() {
     if (!usuario?.id) return
     cargarNotificaciones()
 
-    // Realtime: nuevos likes
     const canalReacciones = supabase
       .channel('notif_reacciones')
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'reacciones',
-      }, async (payload) => {
-        // Verificar si la publicacion es mia
-        const { data: pub } = await supabase
-          .from('publicaciones').select('user_id').eq('id', payload.new.publicacion_id).single()
-        if (pub?.user_id === usuario.id && payload.new.user_id !== usuario.id) {
-          cargarNotificaciones()
-        }
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'reacciones' }, async (payload) => {
+        if (payload.new.user_id === usuario.id) return
+        const { data: pub } = await supabase.from('publicaciones').select('user_id').eq('id', payload.new.publicacion_id).single()
+        if (pub?.user_id === usuario.id) cargarNotificaciones()
       })
       .subscribe()
 
-    // Realtime: nuevos comentarios
     const canalComentarios = supabase
       .channel('notif_comentarios')
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'comentarios',
-      }, async (payload) => {
-        const { data: pub } = await supabase
-          .from('publicaciones').select('user_id').eq('id', payload.new.publicacion_id).single()
-        if (pub?.user_id === usuario.id && payload.new.user_id !== usuario.id) {
-          cargarNotificaciones()
-        }
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'comentarios' }, async (payload) => {
+        if (payload.new.user_id === usuario.id) return
+        const { data: pub } = await supabase.from('publicaciones').select('user_id').eq('id', payload.new.publicacion_id).single()
+        if (pub?.user_id === usuario.id) cargarNotificaciones()
       })
       .subscribe()
 
-    // Realtime: nuevos reposts
     const canalReposts = supabase
       .channel('notif_reposts')
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'reposts',
-      }, async (payload) => {
-        const { data: pub } = await supabase
-          .from('publicaciones').select('user_id').eq('id', payload.new.publicacion_id).single()
-        if (pub?.user_id === usuario.id && payload.new.user_id !== usuario.id) {
-          cargarNotificaciones()
-        }
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'reposts' }, async (payload) => {
+        if (payload.new.user_id === usuario.id) return
+        const { data: pub } = await supabase.from('publicaciones').select('user_id').eq('id', payload.new.publicacion_id).single()
+        if (pub?.user_id === usuario.id) cargarNotificaciones()
       })
       .subscribe()
 
-    // Realtime: solicitudes de amistad
     const canalAmigos = supabase
       .channel('notif_amigos_pantalla')
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'amigos',
-        filter: `amigo_id=eq.${usuario.id}`
-      }, () => cargarNotificaciones())
-      .on('postgres_changes', {
-        event: 'UPDATE', schema: 'public', table: 'amigos',
-      }, () => cargarNotificaciones())
+      .on('postgres_changes', { event:'INSERT', schema:'public', table:'amigos', filter:`amigo_id=eq.${usuario.id}` }, () => cargarNotificaciones())
+      .on('postgres_changes', { event:'UPDATE', schema:'public', table:'amigos' }, () => cargarNotificaciones())
       .subscribe()
 
     return () => {
@@ -77,6 +55,14 @@ export default function Notificaciones() {
 
   async function cargarNotificaciones() {
     setCargando(true)
+
+    // Obtener desde cuando ya vio las notificaciones
+    const { data: vistasData } = await supabase
+      .from('notificaciones_vistas')
+      .select('vistas_hasta')
+      .eq('user_id', usuario.id)
+      .single()
+    const vistasHasta = vistasData?.vistas_hasta || null
 
     // Mis publicaciones
     const { data: misPubs } = await supabase
@@ -126,7 +112,8 @@ export default function Notificaciones() {
         foto: r.profiles?.foto_perfil_url,
         texto: r.tipo === 'corazon' ? 'le dio me gusta a tu publicacion' : 'no le gusto tu publicacion',
         preview: r.publicaciones?.contenido?.slice(0, 50),
-        fecha: r.created_at
+        fecha: r.created_at,
+        nueva: vistasHasta ? new Date(r.created_at) > new Date(vistasHasta) : true
       })),
       ...(comentarios.data || []).map(c => ({
         id: `com-${c.publicacion_id}-${c.user_id}`,
@@ -135,7 +122,8 @@ export default function Notificaciones() {
         foto: c.profiles?.foto_perfil_url,
         texto: 'comento en tu publicacion',
         preview: c.contenido?.slice(0, 50),
-        fecha: c.created_at
+        fecha: c.created_at,
+        nueva: vistasHasta ? new Date(c.created_at) > new Date(vistasHasta) : true
       })),
       ...(solicitudes.data || []).map(s => ({
         id: `amigo-${s.id}`,
@@ -143,7 +131,8 @@ export default function Notificaciones() {
         nombre: s.profiles?.nombre || 'Alguien',
         foto: s.profiles?.foto_perfil_url,
         texto: s.estado === 'aceptado' ? 'ahora es tu amigo' : 'te envio una solicitud de amistad',
-        fecha: s.created_at
+        fecha: s.created_at,
+        nueva: vistasHasta ? new Date(s.created_at) > new Date(vistasHasta) : true
       })),
       ...(repostsData.data || []).map(r => ({
         id: `repost-${r.publicacion_id}-${r.user_id}`,
@@ -152,7 +141,8 @@ export default function Notificaciones() {
         foto: r.profiles?.foto_perfil_url,
         texto: 'compartio tu publicacion',
         preview: r.publicaciones?.contenido?.slice(0, 50),
-        fecha: r.created_at
+        fecha: r.created_at,
+        nueva: vistasHasta ? new Date(r.created_at) > new Date(vistasHasta) : true
       })),
     ]
 
@@ -160,6 +150,17 @@ export default function Notificaciones() {
     setNotificaciones(todas)
     setCargando(false)
   }
+
+  async function limpiar() {
+    // Guardar timestamp actual como "visto hasta aquí"
+    const ahora = new Date().toISOString()
+    await supabase.from('notificaciones_vistas')
+      .upsert({ user_id: usuario.id, vistas_hasta: ahora }, { onConflict: 'user_id' })
+    // Marcar todas como no nuevas en el estado
+    setNotificaciones(prev => prev.map(n => ({ ...n, nueva: false })))
+  }
+
+  const hayNuevas = notificaciones.some(n => n.nueva)
 
   const iconoPorTipo = (tipo) => {
     if (tipo === 'like') return <Heart size={14} fill="#f43f5e" stroke="#f43f5e" />
@@ -201,9 +202,12 @@ export default function Notificaciones() {
         .notif-row {
           display:flex; align-items:flex-start; gap:12px; padding:14px 20px;
           border-bottom:1px solid var(--border-subtle); transition:background 150ms ease;
+          position:relative;
         }
         .notif-row:hover { background:var(--surface-2); }
         .notif-row:last-child { border-bottom:none; }
+        .notif-row.nueva { background:var(--accent-muted); }
+        .notif-row.nueva:hover { background:rgba(37,99,235,0.15); }
       `}</style>
 
       <div style={{ background:'var(--surface-1)', border:'1px solid var(--border-subtle)', borderRadius:'var(--r-xl)', overflow:'hidden' }}>
@@ -212,17 +216,22 @@ export default function Notificaciones() {
         <div style={{ padding:'20px', borderBottom:'1px solid var(--border-subtle)', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <h2 style={{ margin:0, fontSize:17, fontWeight:700, color:'var(--ink-primary)', display:'flex', alignItems:'center', gap:8 }}>
             <Bell size={20} style={{ color:'var(--accent-bright)' }} /> Notificaciones
+            {hayNuevas && (
+              <span style={{ fontSize:11, fontWeight:700, background:'var(--accent)', color:'#fff', padding:'2px 8px', borderRadius:'var(--r-full)' }}>
+                {notificaciones.filter(n => n.nueva).length} nuevas
+              </span>
+            )}
           </h2>
-          {notificaciones.length > 0 && (
-            <button onClick={() => setNotificaciones([])} style={{
+          {hayNuevas && (
+            <button onClick={limpiar} style={{
               background:'none', border:'1px solid var(--border-subtle)', borderRadius:'var(--r-sm)',
               padding:'5px 10px', color:'var(--ink-tertiary)', fontFamily:'DM Sans',
               fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:5, transition:'all 150ms ease'
             }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor='var(--danger)'; e.currentTarget.style.color='var(--danger)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor='var(--accent)'; e.currentTarget.style.color='var(--accent-bright)' }}
               onMouseLeave={e => { e.currentTarget.style.borderColor='var(--border-subtle)'; e.currentTarget.style.color='var(--ink-tertiary)' }}
             >
-              <Trash2 size={13} /> Limpiar
+              <Check size={13} /> Marcar como vistas
             </button>
           )}
         </div>
@@ -237,7 +246,11 @@ export default function Notificaciones() {
             <p style={{ fontSize:13, color:'var(--ink-muted)' }}>Cuando alguien interactue contigo apareceran aqui</p>
           </div>
         ) : notificaciones.map(notif => (
-          <div key={notif.id} className="notif-row">
+          <div key={notif.id} className={`notif-row${notif.nueva ? ' nueva' : ''}`}>
+            {/* Punto azul si es nueva */}
+            {notif.nueva && (
+              <div style={{ position:'absolute', left:8, top:'50%', transform:'translateY(-50%)', width:6, height:6, borderRadius:'50%', background:'var(--accent)' }} />
+            )}
             <div style={{ position:'relative', flexShrink:0 }}>
               {notif.foto ? (
                 <img src={notif.foto} alt="avatar" style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover', border:'1.5px solid var(--border-default)' }} />

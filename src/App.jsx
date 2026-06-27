@@ -312,33 +312,39 @@ export default function App() {
 
   async function cargarTotalNotificaciones() {
   if (!usuario?.id) return
+  const { data: vistasData } = await supabase
+    .from('notificaciones_vistas').select('vistas_hasta')
+    .eq('user_id', usuario.id).single()
+  const vistasHasta = vistasData?.vistas_hasta || null
 
-  // Solicitudes de amistad pendientes
-  const { count: solicitudes } = await supabase
-    .from('amigos').select('*', { count:'exact', head:true })
-    .eq('amigo_id', usuario.id).eq('estado', 'pendiente')
-
-  // Mis publicaciones
   const { data: misPubs } = await supabase
     .from('publicaciones').select('id').eq('user_id', usuario.id)
   const misPubIds = (misPubs || []).map(p => p.id)
 
-  let likes = 0, comentarios = 0, reposts = 0
+  const filtroFecha = vistasHasta ? `created_at=gt.${vistasHasta}` : null
+
+  let total = 0
+  const { count: solicitudes } = await supabase
+    .from('amigos').select('*', { count:'exact', head:true })
+    .eq('amigo_id', usuario.id).eq('estado', 'pendiente')
+    .gt('created_at', vistasHasta || '1970-01-01')
+  total += solicitudes || 0
+
   if (misPubIds.length > 0) {
     const [r, c, rp] = await Promise.all([
       supabase.from('reacciones').select('*', { count:'exact', head:true })
-        .in('publicacion_id', misPubIds).neq('user_id', usuario.id),
+        .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
+        .gt('created_at', vistasHasta || '1970-01-01'),
       supabase.from('comentarios').select('*', { count:'exact', head:true })
-        .in('publicacion_id', misPubIds).neq('user_id', usuario.id),
+        .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
+        .gt('created_at', vistasHasta || '1970-01-01'),
       supabase.from('reposts').select('*', { count:'exact', head:true })
-        .in('publicacion_id', misPubIds).neq('user_id', usuario.id),
+        .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
+        .gt('created_at', vistasHasta || '1970-01-01'),
     ])
-    likes = r.count || 0
-    comentarios = c.count || 0
-    reposts = rp.count || 0
+    total += (r.count || 0) + (c.count || 0) + (rp.count || 0)
   }
-
-  setTotalNotificaciones((solicitudes || 0) + likes + comentarios + reposts)
+  setTotalNotificaciones(total)
 }
 
   async function cargarTotalMensajes() {
