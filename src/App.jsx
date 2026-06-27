@@ -311,12 +311,35 @@ export default function App() {
   }
 
   async function cargarTotalNotificaciones() {
-    if (!usuario?.id) return
-    const { count: solicitudes } = await supabase
-      .from('amigos').select('*', { count:'exact', head:true })
-      .eq('amigo_id', usuario.id).eq('estado', 'pendiente')
-    setTotalNotificaciones(solicitudes || 0)
+  if (!usuario?.id) return
+
+  // Solicitudes de amistad pendientes
+  const { count: solicitudes } = await supabase
+    .from('amigos').select('*', { count:'exact', head:true })
+    .eq('amigo_id', usuario.id).eq('estado', 'pendiente')
+
+  // Mis publicaciones
+  const { data: misPubs } = await supabase
+    .from('publicaciones').select('id').eq('user_id', usuario.id)
+  const misPubIds = (misPubs || []).map(p => p.id)
+
+  let likes = 0, comentarios = 0, reposts = 0
+  if (misPubIds.length > 0) {
+    const [r, c, rp] = await Promise.all([
+      supabase.from('reacciones').select('*', { count:'exact', head:true })
+        .in('publicacion_id', misPubIds).neq('user_id', usuario.id),
+      supabase.from('comentarios').select('*', { count:'exact', head:true })
+        .in('publicacion_id', misPubIds).neq('user_id', usuario.id),
+      supabase.from('reposts').select('*', { count:'exact', head:true })
+        .in('publicacion_id', misPubIds).neq('user_id', usuario.id),
+    ])
+    likes = r.count || 0
+    comentarios = c.count || 0
+    reposts = rp.count || 0
   }
+
+  setTotalNotificaciones((solicitudes || 0) + likes + comentarios + reposts)
+}
 
   async function cargarTotalMensajes() {
     if (!usuario?.id) return
