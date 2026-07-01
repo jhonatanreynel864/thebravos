@@ -120,6 +120,56 @@ const getCss = (tema) => `
     margin-top:4px;
   }
 
+  /* Sidebar derecho rediseñado */
+  .side-panel-card {
+    background: var(--surface-1);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--r-xl);
+    padding: 20px;
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+  }
+  .side-panel-card:hover { border-color: var(--border-default); box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+
+  .side-panel-title {
+    display:flex; align-items:center; gap:8px;
+    font-size:13px; font-weight:700; letter-spacing:0.02em;
+    color: var(--ink-primary); margin-bottom:14px;
+  }
+
+  .side-panel-item {
+    display:flex; align-items:center; gap:10px; padding:9px 12px;
+    border-radius: var(--r-md); background: var(--surface-2);
+    border: 1px solid var(--border-subtle);
+    transition: border-color 150ms ease, transform 150ms ease;
+  }
+  .side-panel-item:hover { border-color: var(--border-default); transform: translateX(2px); }
+
+  .side-panel-empty {
+    font-size:12px; color:var(--ink-muted); text-align:center;
+    padding:16px 8px; border:1px dashed var(--border-default); border-radius: var(--r-md);
+  }
+
+  .cta-card {
+    position:relative; overflow:hidden;
+    background: linear-gradient(155deg, #e11d2f 0%, #b91c1c 100%);
+    border-radius: var(--r-xl); padding:22px;
+    box-shadow: 0 4px 20px rgba(220,38,38,0.28);
+  }
+  .cta-card::before {
+    content:''; position:absolute; top:-40px; right:-40px;
+    width:140px; height:140px; border-radius:50%;
+    background: rgba(255,255,255,0.08); pointer-events:none;
+  }
+  .cta-btn {
+    position:relative; z-index:1; width:100%; padding:11px 0;
+    background:#fff; color:#b91c1c; border:none; border-radius: var(--r-md);
+    font-family:'DM Sans'; font-weight:700; font-size:13px; cursor:pointer;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .cta-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
+  .cta-btn:active { transform: translateY(0); }
+
   @media (max-width: 1100px) {
     .sidebar-right { display: none !important; }
     .layout-grid { grid-template-columns: 240px 1fr !important; }
@@ -584,80 +634,57 @@ export default function App() {
           <aside className="sidebar-right">
             <div style={{ position:'sticky', top:84, display:'flex', flexDirection:'column', gap:16 }}>
 
-              {/* Descubre tu camino - ROJO */}
-              <div style={{
-                background:'#dc2626',
-                borderRadius:'var(--r-xl)', padding:20,
-                boxShadow:'0 8px 24px rgba(220,38,38,0.45)'
-              }}>
-                <p style={{ fontSize:14, fontWeight:700, color:'#fff', marginBottom:8, display:'flex', alignItems:'center', gap:6 }}>
+              {/* Descubre tu camino - CTA */}
+              <div className="cta-card">
+                <p style={{ position:'relative', zIndex:1, fontSize:14, fontWeight:700, color:'#fff', marginBottom:8, display:'flex', alignItems:'center', gap:7 }}>
                   <Sparkles size={16} /> Descubre tu camino
                 </p>
-                <p style={{ fontSize:13, color:'rgba(255,255,255,0.88)', lineHeight:1.5, marginBottom:14 }}>
+                <p style={{ position:'relative', zIndex:1, fontSize:13, color:'rgba(255,255,255,0.85)', lineHeight:1.5, marginBottom:16 }}>
                   Responde el test y encuentra la carrera que va contigo.
                 </p>
-                <button onClick={() => setVista('explorar')} style={{
-                  width:'100%', padding:'10px 0', background:'#fff', color:'#dc2626',
-                  border:'none', borderRadius:'var(--r-md)', fontFamily:'DM Sans',
-                  fontWeight:700, fontSize:13, cursor:'pointer', transition:'all 150ms ease'
-                }}
-                  onMouseEnter={e => e.currentTarget.style.opacity='0.9'}
-                  onMouseLeave={e => e.currentTarget.style.opacity='1'}
-                >Comenzar test →</button>
+                <button onClick={() => setVista('explorar')} className="cta-btn">
+                  Comenzar test →
+                </button>
               </div>
 
-              {/* Logros academicos - AZUL */}
-              <div style={{
-                background:'#1d4ed8',
-                borderRadius:'var(--r-xl)', padding:20,
-                boxShadow:'0 8px 24px rgba(29,78,216,0.45)'
-              }}>
-                <p style={{ fontSize:14, fontWeight:700, color:'#fff', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
-                  <Trophy size={16} /> Logros academicos
+              {/* Logros academicos */}
+              <div className="side-panel-card">
+                <p className="side-panel-title">
+                  <span style={{ width:28, height:28, borderRadius:'var(--r-md)', background:'rgba(245,158,11,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <Trophy size={14} style={{ color:'#f59e0b' }} />
+                  </span>
+                  Logros academicos
                 </p>
                 {logros.length === 0 ? (
-                  <p style={{ fontSize:12, color:'rgba(255,255,255,0.75)', textAlign:'center', padding:'8px 0' }}>
-                    Empieza a participar para desbloquear logros
-                  </p>
+                  <div className="side-panel-empty">Empieza a participar para desbloquear logros</div>
                 ) : (
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {logros.map(logro => (
-                      <div key={logro.id} style={{
-                        display:'flex', alignItems:'center', gap:10, padding:'8px 12px',
-                        background:'rgba(255,255,255,0.15)', borderRadius:'var(--r-md)',
-                        border:'1px solid rgba(255,255,255,0.2)'
-                      }}>
-                        <Award size={15} style={{ color:'#fff', flexShrink:0 }} />
-                        <span style={{ fontSize:12, color:'#fff', fontWeight:500 }}>{logro.titulo}</span>
+                      <div key={logro.id} className="side-panel-item">
+                        <Award size={14} style={{ color:'#f59e0b', flexShrink:0 }} />
+                        <span style={{ fontSize:12.5, color:'var(--ink-secondary)', fontWeight:500 }}>{logro.titulo}</span>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Carreras guardadas - MORADO */}
-              <div style={{
-                background:'#7c3aed',
-                borderRadius:'var(--r-xl)', padding:20,
-                boxShadow:'0 8px 24px rgba(124,58,237,0.45)'
-              }}>
-                <p style={{ fontSize:14, fontWeight:700, color:'#fff', marginBottom:12, display:'flex', alignItems:'center', gap:6 }}>
-                  <GraduationCap size={16} /> Mis carreras guardadas
+              {/* Carreras guardadas */}
+              <div className="side-panel-card">
+                <p className="side-panel-title">
+                  <span style={{ width:28, height:28, borderRadius:'var(--r-md)', background:'rgba(139,92,246,0.15)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                    <GraduationCap size={14} style={{ color:'#8b5cf6' }} />
+                  </span>
+                  Mis carreras guardadas
                 </p>
                 {carrerasGuardadas.length === 0 ? (
-                  <p style={{ fontSize:12, color:'rgba(255,255,255,0.75)', textAlign:'center', padding:'8px 0' }}>
-                    Aun no has guardado carreras
-                  </p>
+                  <div className="side-panel-empty">Aun no has guardado carreras</div>
                 ) : (
                   <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
                     {carrerasGuardadas.map(c => (
-                      <div key={c} style={{
-                        display:'flex', alignItems:'center', gap:10, padding:'8px 12px',
-                        background:'rgba(255,255,255,0.15)', borderRadius:'var(--r-md)',
-                        border:'1px solid rgba(255,255,255,0.2)'
-                      }}>
-                        <GraduationCap size={15} style={{ color:'#fff', flexShrink:0 }} />
-                        <span style={{ fontSize:12, color:'#fff', fontWeight:500 }}>{c}</span>
+                      <div key={c} className="side-panel-item">
+                        <GraduationCap size={14} style={{ color:'#8b5cf6', flexShrink:0 }} />
+                        <span style={{ fontSize:12.5, color:'var(--ink-secondary)', fontWeight:500 }}>{c}</span>
                       </div>
                     ))}
                   </div>
