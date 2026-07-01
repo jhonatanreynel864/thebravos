@@ -1,7 +1,34 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
-import { Send, Search, MessageCircle, ArrowLeft } from 'lucide-react'
+import { Send, Search, MessageCircle, ArrowLeft, Palette, Check } from 'lucide-react'
+
+const PALETA_COLORES = [
+  '#2563eb', // azul (default)
+  '#dc2626', // rojo
+  '#ea580c', // naranja
+  '#d97706', // ambar
+  '#16a34a', // verde
+  '#0d9488', // teal
+  '#7c3aed', // violeta
+  '#c026d3', // magenta
+  '#e11d48', // rosa
+  '#475569', // gris pizarra
+]
+
+function hexARgba(hex, alpha) {
+  const r = parseInt(hex.slice(1, 3), 16)
+  const g = parseInt(hex.slice(3, 5), 16)
+  const b = parseInt(hex.slice(5, 7), 16)
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`
+}
+
+function oscurecer(hex, factor = 0.85) {
+  const r = Math.round(parseInt(hex.slice(1, 3), 16) * factor)
+  const g = Math.round(parseInt(hex.slice(3, 5), 16) * factor)
+  const b = Math.round(parseInt(hex.slice(5, 7), 16) * factor)
+  return `rgb(${r}, ${g}, ${b})`
+}
 
 export default function Mensajes() {
   const { usuario } = useAuth()
@@ -12,11 +39,16 @@ export default function Mensajes() {
   const [busqueda, setBusqueda] = useState('')
   const [resultados, setResultados] = useState([])
   const [cargando, setCargando] = useState(true)
+  const [miColor, setMiColor] = useState('#2563eb')
+  const [selectorAbierto, setSelectorAbierto] = useState(false)
+  const [colorPersonalizado, setColorPersonalizado] = useState('#2563eb')
   const mensajesEndRef = useRef(null)
+  const selectorRef = useRef(null)
 
   useEffect(() => {
     if (!usuario?.id) return
     cargarConversaciones()
+    cargarMiColor()
   }, [usuario])
 
   useEffect(() => {
@@ -48,6 +80,33 @@ export default function Mensajes() {
       .subscribe()
     return () => supabase.removeChannel(canal)
   }, [usuario, contactoActivo])
+
+  // Cerrar selector de color al hacer clic afuera
+  useEffect(() => {
+    function manejarClicAfuera(e) {
+      if (selectorRef.current && !selectorRef.current.contains(e.target)) {
+        setSelectorAbierto(false)
+      }
+    }
+    if (selectorAbierto) document.addEventListener('mousedown', manejarClicAfuera)
+    return () => document.removeEventListener('mousedown', manejarClicAfuera)
+  }, [selectorAbierto])
+
+  async function cargarMiColor() {
+    const { data } = await supabase
+      .from('profiles').select('color_chat')
+      .eq('id', usuario.id).single()
+    if (data?.color_chat) {
+      setMiColor(data.color_chat)
+      setColorPersonalizado(data.color_chat)
+    }
+  }
+
+  async function cambiarColor(nuevoColor) {
+    setMiColor(nuevoColor)
+    setColorPersonalizado(nuevoColor)
+    await supabase.from('profiles').update({ color_chat: nuevoColor }).eq('id', usuario.id)
+  }
 
   async function cargarConversaciones() {
     setCargando(true)
@@ -129,7 +188,7 @@ export default function Mensajes() {
   }
 
   return (
-    <div style={{ animation:'fadeUp 300ms var(--ease-out) both' }}>
+    <div style={{ animation:'fadeUp 300ms var(--ease-out) both', '--mi-color': miColor, '--mi-color-oscuro': oscurecer(miColor) }}>
       <style>{`
         .msg-input {
           flex:1; padding:10px 16px;
@@ -140,7 +199,7 @@ export default function Mensajes() {
           font-family:'DM Sans'; font-size:14px; outline:none;
           transition:all 150ms ease;
         }
-        .msg-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-muted); }
+        .msg-input:focus { border-color:var(--mi-color); box-shadow:0 0 0 3px ${hexARgba(miColor,0.14)}; }
         .msg-input::placeholder { color:var(--ink-muted); }
         .contacto-row {
           display:flex; align-items:center; gap:12px;
@@ -148,13 +207,15 @@ export default function Mensajes() {
           border-radius:var(--r-md); transition:background 150ms ease;
         }
         .contacto-row:hover { background:var(--surface-2); }
-        .contacto-row.active { background:var(--accent-muted); }
+        .contacto-row.active { background:${hexARgba(miColor,0.1)}; }
         .burbuja-enviada {
-          background:var(--accent); color:#fff;
+          background: linear-gradient(155deg, var(--mi-color) 0%, var(--mi-color-oscuro) 100%);
+          color:#fff;
           padding:10px 16px; border-radius:18px 18px 4px 18px;
           font-size:14px; line-height:1.6;
           max-width:420px; width:fit-content;
           word-break:break-word; white-space:pre-wrap;
+          box-shadow: 0 2px 8px ${hexARgba(miColor,0.25)};
         }
         .burbuja-recibida {
           background:var(--surface-2); color:var(--ink-primary);
@@ -166,12 +227,12 @@ export default function Mensajes() {
         }
         .send-msg-btn {
           width:40px; height:40px; border-radius:50%;
-          background:var(--accent); border:none; cursor:pointer;
+          background:var(--mi-color); border:none; cursor:pointer;
           display:flex; align-items:center; justify-content:center;
           color:#fff; transition:all 150ms ease; flex-shrink:0;
-          box-shadow:0 2px 8px var(--accent-glow);
+          box-shadow:0 2px 8px ${hexARgba(miColor,0.35)};
         }
-        .send-msg-btn:hover { background:var(--accent-bright); transform:scale(1.05); }
+        .send-msg-btn:hover { transform:scale(1.05); filter:brightness(1.08); }
         .send-msg-btn:disabled { opacity:0.5; cursor:not-allowed; transform:none; }
         .buscar-input {
           width:100%; padding:8px 14px 8px 36px;
@@ -181,7 +242,7 @@ export default function Mensajes() {
           font-family:'DM Sans'; font-size:13px; outline:none;
           transition:all 150ms ease;
         }
-        .buscar-input:focus { border-color:var(--accent); }
+        .buscar-input:focus { border-color:var(--mi-color); }
         .buscar-input::placeholder { color:var(--ink-muted); }
 
         .msgs-container {
@@ -195,7 +256,48 @@ export default function Mensajes() {
           border-right:1px solid var(--border-subtle);
           display:flex; flex-direction:column; overflow:hidden;
         }
-        .msgs-chat-panel { display:flex; flex-direction:column; overflow:hidden; }
+        .msgs-chat-panel {
+          display:flex; flex-direction:column; overflow:hidden;
+        }
+        .msgs-hilo {
+          background: linear-gradient(180deg, ${hexARgba(miColor,0.04)} 0%, transparent 220px);
+        }
+
+        .color-picker-btn {
+          width:34px; height:34px; border-radius:50%;
+          border:2px solid var(--border-default); cursor:pointer;
+          background:var(--mi-color); flex-shrink:0;
+          transition:transform 150ms ease, border-color 150ms ease;
+          display:flex; align-items:center; justify-content:center;
+        }
+        .color-picker-btn:hover { transform:scale(1.08); border-color:var(--ink-tertiary); }
+        .color-popover {
+          position:absolute; top:calc(100% + 10px); right:0;
+          background:var(--surface-1); border:1px solid var(--border-default);
+          border-radius:var(--r-lg); padding:14px;
+          box-shadow:0 8px 28px rgba(0,0,0,0.22);
+          z-index:50; width:216px;
+          animation:fadeUp 150ms var(--ease-out) both;
+        }
+        .swatch-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-bottom:12px; }
+        .swatch {
+          width:32px; height:32px; border-radius:50%; cursor:pointer;
+          border:2px solid transparent; display:flex; align-items:center; justify-content:center;
+          transition:transform 150ms ease, border-color 150ms ease;
+        }
+        .swatch:hover { transform:scale(1.1); }
+        .swatch.selected { border-color:var(--ink-primary); }
+        .custom-color-row {
+          display:flex; align-items:center; gap:8px;
+          border-top:1px solid var(--border-subtle); padding-top:12px;
+        }
+        .custom-color-input {
+          -webkit-appearance:none; appearance:none; width:32px; height:32px;
+          border:none; border-radius:50%; cursor:pointer; padding:0; background:none;
+          overflow:hidden; flex-shrink:0;
+        }
+        .custom-color-input::-webkit-color-swatch-wrapper { padding:0; }
+        .custom-color-input::-webkit-color-swatch { border:2px solid var(--border-default); border-radius:50%; }
 
         @media (max-width: 768px) {
           .msgs-container {
@@ -214,7 +316,7 @@ export default function Mensajes() {
         <div className={`msgs-lista-panel${contactoActivo ? ' oculto-movil' : ''}`}>
           <div style={{ padding:'16px', borderBottom:'1px solid var(--border-subtle)', flexShrink:0 }}>
             <h2 style={{ fontSize:15, fontWeight:700, color:'var(--ink-primary)', marginBottom:12, display:'flex', alignItems:'center', gap:8 }}>
-              <MessageCircle size={17} style={{ color:'var(--accent-bright)' }} /> Mensajes
+              <MessageCircle size={17} style={{ color:'var(--mi-color)' }} /> Mensajes
             </h2>
             <form onSubmit={buscarUsuarios} style={{ position:'relative' }}>
               <Search size={14} style={{ position:'absolute', left:11, top:'50%', transform:'translateY(-50%)', color:'var(--ink-muted)', pointerEvents:'none' }} />
@@ -288,14 +390,39 @@ export default function Mensajes() {
                 <ArrowLeft size={18} />
               </button>
               <Avatar texto={iniciales(contactoActivo.nombre)} foto={contactoActivo.foto_perfil_url} />
-              <div>
+              <div style={{ flex:1, minWidth:0 }}>
                 <p style={{ margin:0, fontWeight:700, color:'var(--ink-primary)', fontSize:14 }}>{contactoActivo.nombre}</p>
                 <p style={{ margin:0, color:'var(--ink-tertiary)', fontSize:12 }}>{contactoActivo.carrera}</p>
+              </div>
+
+              {/* Selector de color */}
+              <div ref={selectorRef} style={{ position:'relative', flexShrink:0 }}>
+                <button className="color-picker-btn" title="Personalizar color del chat" onClick={() => setSelectorAbierto(v => !v)}>
+                  <Palette size={14} style={{ color:'#fff', opacity:0.9 }} />
+                </button>
+                {selectorAbierto && (
+                  <div className="color-popover">
+                    <p style={{ fontSize:11, fontWeight:700, color:'var(--ink-tertiary)', letterSpacing:'0.04em', marginBottom:10 }}>COLOR DE TUS MENSAJES</p>
+                    <div className="swatch-grid">
+                      {PALETA_COLORES.map(c => (
+                        <div key={c} className={`swatch${miColor.toLowerCase()===c.toLowerCase()?' selected':''}`}
+                          style={{ background:c }} onClick={() => cambiarColor(c)}>
+                          {miColor.toLowerCase()===c.toLowerCase() && <Check size={14} style={{ color:'#fff' }} />}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="custom-color-row">
+                      <input type="color" value={colorPersonalizado} className="custom-color-input"
+                        onChange={e => cambiarColor(e.target.value)} />
+                      <span style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Color personalizado</span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Mensajes */}
-            <div style={{ flex:1, overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:12 }}>
+            <div className="msgs-hilo" style={{ flex:1, overflowY:'auto', padding:'20px', display:'flex', flexDirection:'column', gap:12 }}>
               {mensajes.length === 0 ? (
                 <div style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', color:'var(--ink-tertiary)', fontSize:13 }}>
                   Inicia la conversacion con {contactoActivo.nombre}
