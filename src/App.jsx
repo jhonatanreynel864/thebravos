@@ -375,10 +375,10 @@ export default function App() {
 
   let total = 0
   const { count: solicitudes } = await supabase
-    .from('amigos').select('*', { count:'exact', head:true })
-    .eq('amigo_id', usuario.id).eq('estado', 'pendiente')
-    .gt('created_at', vistasHasta || '1970-01-01')
-  total += solicitudes || 0
+  .from('amigos').select('*', { count:'exact', head:true })
+  .eq('amigo_id', usuario.id)
+  .gt('created_at', vistasHasta || '1970-01-01')
+    total += solicitudes || 0
 
   if (misPubIds.length > 0) {
     const [r, c, rp] = await Promise.all([
@@ -599,7 +599,6 @@ export default function App() {
                       className={`side-nav-item${vista===item.id?' active':''}`}>
                       <span className="nav-icon"><Icon size={18} /></span>
                       {item.label}
-                      {item.id === 'amigos' && totalAmigos > 0 && <span className="side-nav-badge">{totalAmigos}</span>}
                       {item.id === 'notificaciones' && totalNotificaciones > 0 && <span className="side-nav-badge">{totalNotificaciones}</span>}
                       {item.id === 'mensajes' && totalMensajes > 0 && <span className="side-nav-badge">{totalMensajes}</span>}
                     </button>
@@ -732,7 +731,6 @@ export default function App() {
                         className={`side-nav-item${vista===item.id?' active':''}`}>
                         <span className="nav-icon"><Icon size={18} /></span>
                         {item.label}
-                        {item.id === 'amigos' && totalAmigos > 0 && <span className="side-nav-badge">{totalAmigos}</span>}
                         {item.id === 'notificaciones' && totalNotificaciones > 0 && <span className="side-nav-badge">{totalNotificaciones}</span>}
                         {item.id === 'mensajes' && totalMensajes > 0 && <span className="side-nav-badge">{totalMensajes}</span>}
                       </button>

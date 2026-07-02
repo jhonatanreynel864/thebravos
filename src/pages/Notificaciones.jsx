@@ -152,13 +152,15 @@ export default function Notificaciones() {
   }
 
   async function limpiar() {
-    // Guardar timestamp actual como "visto hasta aquí"
-    const ahora = new Date().toISOString()
-    await supabase.from('notificaciones_vistas')
-      .upsert({ user_id: usuario.id, vistas_hasta: ahora }, { onConflict: 'user_id' })
-    // Marcar todas como no nuevas en el estado
-    setNotificaciones(prev => prev.map(n => ({ ...n, nueva: false })))
+  const ahora = new Date().toISOString()
+  const { error } = await supabase.from('notificaciones_vistas')
+    .upsert({ user_id: usuario.id, vistas_hasta: ahora }, { onConflict: 'user_id' })
+  if (error) {
+    console.error('Error guardando vistas_hasta:', error)
+    return
   }
+  setNotificaciones(prev => prev.map(n => ({ ...n, nueva: false })))
+}
 
   const hayNuevas = notificaciones.some(n => n.nueva)
 
