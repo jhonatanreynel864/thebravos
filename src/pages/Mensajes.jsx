@@ -30,6 +30,48 @@ function oscurecer(hex, factor = 0.85) {
   return `rgb(${r}, ${g}, ${b})`
 }
 
+// --- Conversion HSV <-> HEX para el selector tipo gradiente ---
+function hsvAHex(h, s, v) {
+  s = s / 100; v = v / 100
+  const c = v * s
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1))
+  const m = v - c
+  let r = 0, g = 0, b = 0
+  if (h < 60) { r = c; g = x; b = 0 }
+  else if (h < 120) { r = x; g = c; b = 0 }
+  else if (h < 180) { r = 0; g = c; b = x }
+  else if (h < 240) { r = 0; g = x; b = c }
+  else if (h < 300) { r = x; g = 0; b = c }
+  else { r = c; g = 0; b = x }
+  const rr = Math.round((r + m) * 255)
+  const gg = Math.round((g + m) * 255)
+  const bb = Math.round((b + m) * 255)
+  return '#' + [rr, gg, bb].map(n => n.toString(16).padStart(2, '0')).join('')
+}
+
+function hexAHsv(hex) {
+  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) return { h: 220, s: 78, v: 92 }
+  const r = parseInt(hex.slice(1, 3), 16) / 255
+  const g = parseInt(hex.slice(3, 5), 16) / 255
+  const b = parseInt(hex.slice(5, 7), 16) / 255
+  const max = Math.max(r, g, b), min = Math.min(r, g, b)
+  const d = max - min
+  let h = 0
+  if (d !== 0) {
+    if (max === r) h = 60 * (((g - b) / d) % 6)
+    else if (max === g) h = 60 * ((b - r) / d + 2)
+    else h = 60 * ((r - g) / d + 4)
+  }
+  if (h < 0) h += 360
+  const s = max === 0 ? 0 : (d / max) * 100
+  const v = max * 100
+  return { h, s, v }
+}
+
+function esHexValido(hex) {
+  return /^#[0-9a-fA-F]{6}$/.test(hex)
+}
+
 export default function Mensajes() {
   const { usuario } = useAuth()
   const [conversaciones, setConversaciones] = useState([])
@@ -41,9 +83,13 @@ export default function Mensajes() {
   const [cargando, setCargando] = useState(true)
   const [miColor, setMiColor] = useState('#2563eb')
   const [selectorAbierto, setSelectorAbierto] = useState(false)
-  const [colorPersonalizado, setColorPersonalizado] = useState('#2563eb')
+  const [hsv, setHsv] = useState({ h: 220, s: 78, v: 92 })
+  const [hexTexto, setHexTexto] = useState('#2563eb')
+  const [arrastrando, setArrastrando] = useState(null) // 'sat' | 'hue' | null
   const mensajesEndRef = useRef(null)
   const selectorRef = useRef(null)
+  const boxRef = useRef(null)
+  const hueRef = useRef(null)
 
   useEffect(() => {
     if (!usuario?.id) return
@@ -92,20 +138,91 @@ export default function Mensajes() {
     return () => document.removeEventListener('mousedown', manejarClicAfuera)
   }, [selectorAbierto])
 
+  // Arrastre del cuadro de saturacion/brillo y de la barra de tono
+  useEffect(() => {
+    if (!arrastrando) return
+
+    function calcularDesdeCuadro(e) {
+      if (!boxRef.current) return
+      const rect = boxRef.current.getBoundingClientRect()
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY
+      const x = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1)
+      const y = Math.min(Math.max((clientY - rect.top) / rect.height, 0), 1)
+      setHsv(prev => {
+        const nuevo = { ...prev, s: x * 100, v: (1 - y) * 100 }
+        const hex = hsvAHex(nuevo.h, nuevo.s, nuevo.v)
+        setMiColor(hex)
+        setHexTexto(hex)
+        return nuevo
+      })
+    }
+
+    function calcularDesdeHue(e) {
+      if (!hueRef.current) return
+      const rect = hueRef.current.getBoundingClientRect()
+      const clientX = e.touches ? e.touches[0].clientX : e.clientX
+      const x = Math.min(Math.max((clientX - rect.left) / rect.width, 0), 1)
+      setHsv(prev => {
+        const nuevo = { ...prev, h: x * 360 }
+        const hex = hsvAHex(nuevo.h, nuevo.s, nuevo.v)
+        setMiColor(hex)
+        setHexTexto(hex)
+        return nuevo
+      })
+    }
+
+    function mover(e) {
+      if (arrastrando === 'sat') calcularDesdeCuadro(e)
+      if (arrastrando === 'hue') calcularDesdeHue(e)
+    }
+    function soltar() {
+      setArrastrando(null)
+      setMiColor(actual => { guardarColor(actual); return actual })
+    }
+
+    window.addEventListener('mousemove', mover)
+    window.addEventListener('mouseup', soltar)
+    window.addEventListener('touchmove', mover, { passive: false })
+    window.addEventListener('touchend', soltar)
+    return () => {
+      window.removeEventListener('mousemove', mover)
+      window.removeEventListener('mouseup', soltar)
+      window.removeEventListener('touchmove', mover)
+      window.removeEventListener('touchend', soltar)
+    }
+  }, [arrastrando])
+
   async function cargarMiColor() {
     const { data } = await supabase
       .from('profiles').select('color_chat')
       .eq('id', usuario.id).single()
     if (data?.color_chat) {
       setMiColor(data.color_chat)
-      setColorPersonalizado(data.color_chat)
+      setHexTexto(data.color_chat)
+      setHsv(hexAHsv(data.color_chat))
     }
   }
 
+  async function guardarColor(hex) {
+    await supabase.from('profiles').update({ color_chat: hex }).eq('id', usuario.id)
+  }
+
+  // Para clics rapidos (paleta de favoritos): actualiza y guarda de inmediato
   async function cambiarColor(nuevoColor) {
     setMiColor(nuevoColor)
-    setColorPersonalizado(nuevoColor)
-    await supabase.from('profiles').update({ color_chat: nuevoColor }).eq('id', usuario.id)
+    setHexTexto(nuevoColor)
+    setHsv(hexAHsv(nuevoColor))
+    await guardarColor(nuevoColor)
+  }
+
+  function manejarCambioHex(valor) {
+    setHexTexto(valor)
+    if (esHexValido(valor)) {
+      setMiColor(valor)
+      setHsv(hexAHsv(valor))
+      guardarColor(valor)
+    }
   }
 
   async function cargarConversaciones() {
@@ -186,6 +303,8 @@ export default function Mensajes() {
     const d = new Date(fecha)
     return d.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })
   }
+
+  const colorHueBase = hsvAHex(hsv.h, 100, 100)
 
   return (
     <div style={{ animation:'fadeUp 300ms var(--ease-out) both', '--mi-color': miColor, '--mi-color-oscuro': oscurecer(miColor) }}>
@@ -276,28 +395,65 @@ export default function Mensajes() {
           background:var(--surface-1); border:1px solid var(--border-default);
           border-radius:var(--r-lg); padding:14px;
           box-shadow:0 8px 28px rgba(0,0,0,0.22);
-          z-index:50; width:216px;
+          z-index:50; width:236px;
           animation:fadeUp 150ms var(--ease-out) both;
         }
-        .swatch-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; margin-bottom:12px; }
+
+        /* Cuadro de saturacion/brillo */
+        .sv-box {
+          position:relative; width:100%; height:150px;
+          border-radius:var(--r-md); cursor:crosshair;
+          margin-bottom:12px; overflow:hidden;
+          touch-action:none; user-select:none;
+        }
+        .sv-box-blanco { position:absolute; inset:0; background:linear-gradient(to right, #fff, rgba(255,255,255,0)); }
+        .sv-box-negro { position:absolute; inset:0; background:linear-gradient(to top, #000, rgba(0,0,0,0)); }
+        .sv-cursor {
+          position:absolute; width:16px; height:16px; border-radius:50%;
+          border:2px solid #fff; box-shadow:0 0 0 1px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.4);
+          transform:translate(-50%, -50%); pointer-events:none;
+        }
+
+        /* Barra de tono (hue) */
+        .hue-bar {
+          position:relative; width:100%; height:14px;
+          border-radius:var(--r-full); margin-bottom:14px; cursor:pointer;
+          background:linear-gradient(to right,
+            #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);
+          touch-action:none; user-select:none;
+        }
+        .hue-cursor {
+          position:absolute; top:50%; width:18px; height:18px; border-radius:50%;
+          background:#fff; border:2px solid rgba(0,0,0,0.15);
+          box-shadow:0 1px 4px rgba(0,0,0,0.35);
+          transform:translate(-50%, -50%); pointer-events:none;
+        }
+
+        .swatch-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:7px; margin-bottom:12px; }
         .swatch {
-          width:32px; height:32px; border-radius:50%; cursor:pointer;
+          width:28px; height:28px; border-radius:50%; cursor:pointer;
           border:2px solid transparent; display:flex; align-items:center; justify-content:center;
           transition:transform 150ms ease, border-color 150ms ease;
         }
         .swatch:hover { transform:scale(1.1); }
         .swatch.selected { border-color:var(--ink-primary); }
-        .custom-color-row {
+
+        .hex-row {
           display:flex; align-items:center; gap:8px;
           border-top:1px solid var(--border-subtle); padding-top:12px;
         }
-        .custom-color-input {
-          -webkit-appearance:none; appearance:none; width:32px; height:32px;
-          border:none; border-radius:50%; cursor:pointer; padding:0; background:none;
-          overflow:hidden; flex-shrink:0;
+        .hex-preview {
+          width:28px; height:28px; border-radius:50%; flex-shrink:0;
+          border:2px solid var(--border-default);
         }
-        .custom-color-input::-webkit-color-swatch-wrapper { padding:0; }
-        .custom-color-input::-webkit-color-swatch { border:2px solid var(--border-default); border-radius:50%; }
+        .hex-input {
+          flex:1; min-width:0; padding:7px 10px;
+          border:1px solid var(--border-subtle); border-radius:var(--r-sm);
+          background:var(--surface-2); color:var(--ink-primary);
+          font-family:'DM Mono', monospace; font-size:13px; outline:none;
+          text-transform:uppercase; transition:border-color 150ms ease;
+        }
+        .hex-input:focus { border-color:var(--mi-color); }
 
         @media (max-width: 768px) {
           .msgs-container {
@@ -403,18 +559,54 @@ export default function Mensajes() {
                 {selectorAbierto && (
                   <div className="color-popover">
                     <p style={{ fontSize:11, fontWeight:700, color:'var(--ink-tertiary)', letterSpacing:'0.04em', marginBottom:10 }}>COLOR DE TUS MENSAJES</p>
+
+                    {/* Cuadro de saturacion / brillo */}
+                    <div
+                      ref={boxRef}
+                      className="sv-box"
+                      style={{ background: colorHueBase }}
+                      onMouseDown={e => setArrastrando('sat')}
+                      onTouchStart={e => setArrastrando('sat')}
+                    >
+                      <div className="sv-box-blanco" />
+                      <div className="sv-box-negro" />
+                      <div className="sv-cursor" style={{
+                        left: `${hsv.s}%`,
+                        top: `${100 - hsv.v}%`,
+                        background: miColor
+                      }} />
+                    </div>
+
+                    {/* Barra de tono */}
+                    <div
+                      ref={hueRef}
+                      className="hue-bar"
+                      onMouseDown={e => setArrastrando('hue')}
+                      onTouchStart={e => setArrastrando('hue')}
+                    >
+                      <div className="hue-cursor" style={{ left: `${(hsv.h / 360) * 100}%`, background: colorHueBase }} />
+                    </div>
+
+                    {/* Favoritos rapidos */}
                     <div className="swatch-grid">
                       {PALETA_COLORES.map(c => (
                         <div key={c} className={`swatch${miColor.toLowerCase()===c.toLowerCase()?' selected':''}`}
                           style={{ background:c }} onClick={() => cambiarColor(c)}>
-                          {miColor.toLowerCase()===c.toLowerCase() && <Check size={14} style={{ color:'#fff' }} />}
+                          {miColor.toLowerCase()===c.toLowerCase() && <Check size={13} style={{ color:'#fff' }} />}
                         </div>
                       ))}
                     </div>
-                    <div className="custom-color-row">
-                      <input type="color" value={colorPersonalizado} className="custom-color-input"
-                        onChange={e => cambiarColor(e.target.value)} />
-                      <span style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Color personalizado</span>
+
+                    {/* Hex manual */}
+                    <div className="hex-row">
+                      <div className="hex-preview" style={{ background: esHexValido(hexTexto) ? hexTexto : miColor }} />
+                      <input
+                        className="hex-input"
+                        value={hexTexto}
+                        onChange={e => manejarCambioHex(e.target.value)}
+                        maxLength={7}
+                        placeholder="#2563EB"
+                      />
                     </div>
                   </div>
                 )}
