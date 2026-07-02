@@ -11,6 +11,32 @@ import Notificaciones from './pages/Notificaciones'
 import PerfilUsuario from './pages/PerfilUsuario'
 import { Home, Compass, MessageCircle, Bell, Users, User, Sun, Moon, Search, Sparkles, Trophy, GraduationCap, Award, BarChart3, FileText, Menu, X as XIcon } from 'lucide-react'
 
+const MAPA_UNIVERSIDADES = {
+  'pascualbravo.edu.co': 'Pascual Bravo',
+  'udea.edu.co': 'Universidad de Antioquia',
+  'unal.edu.co': 'Universidad Nacional de Colombia',
+  'eafit.edu.co': 'Universidad EAFIT',
+  'soyudemedellin.edu.co': 'Universidad de Medellín',
+  'upb.edu.co': 'Universidad Pontificia Bolivariana',
+  'uniandes.edu.co': 'Universidad de los Andes',
+  'javeriana.edu.co': 'Pontificia Universidad Javeriana',
+  'usbmed.edu.co': 'Universidad de San Buenaventura',
+  'itm.edu.co': 'Instituto Tecnológico Metropolitano',
+  'tdea.edu.co': 'Tecnológico de Antioquia',
+  'colmayor.edu.co': 'Colegio Mayor de Antioquia',
+  'uniremington.edu.co': 'Corporación Universitaria Remington',
+  'unaula.edu.co': 'Universidad Autónoma Latinoamericana',
+}
+
+function detectarUniversidadDesdeCorreo(email) {
+  const dominio = email?.split('@')[1]?.toLowerCase().trim()
+  if (!dominio) return null
+  if (MAPA_UNIVERSIDADES[dominio]) return MAPA_UNIVERSIDADES[dominio]
+  const nombreBase = dominio.split('.edu.co')[0].split('.')[0]
+  const limpio = nombreBase.replace(/[-_]/g, ' ')
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1)
+}
+
 const getCss = (tema) => `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -268,9 +294,21 @@ export default function App() {
 
   useEffect(() => {
     if (!usuario?.id) return
-    supabase.from('profiles').select('nombre, foto_perfil_url')
+    supabase.from('profiles').select('nombre, foto_perfil_url, universidad')
       .eq('id', usuario.id).single()
-      .then(({ data }) => { if (data) setPerfil(data) })
+      .then(({ data }) => {
+        if (data) {
+          setPerfil(data)
+          // Red de seguridad: si no tiene universidad guardada, la calculamos del correo y la guardamos
+          if (!data.universidad && usuario.email) {
+            const universidadCalculada = detectarUniversidadDesdeCorreo(usuario.email)
+            if (universidadCalculada) {
+              setPerfil(prev => ({ ...prev, universidad: universidadCalculada }))
+              supabase.from('profiles').update({ universidad: universidadCalculada }).eq('id', usuario.id)
+            }
+          }
+        }
+      })
     cargarTotalAmigos()
     cargarCarrerasGuardadas()
     calcularLogros()
@@ -579,7 +617,7 @@ export default function App() {
                   <div style={{ position:'absolute', bottom:0, right:0, width:12, height:12, borderRadius:'50%', background:'var(--success)', border:'2px solid var(--surface-1)' }}/>
                 </div>
                 <p style={{ fontSize:15, fontWeight:700, color:'var(--ink-primary)', marginBottom:2 }}>{perfil?.nombre||'Estudiante'}</p>
-                <p style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Pascual Bravo</p>
+                <p style={{ fontSize:12, color:'var(--ink-tertiary)' }}>{perfil?.universidad || 'Universidad'}</p>
                 <span className="estudiante-badge">Estudiante</span>
                 <p style={{ fontSize:12, color:'var(--accent-bright)', fontWeight:500, marginTop:6 }}>
                   {totalAmigos} {totalAmigos === 1 ? 'amigo' : 'amigos'}
@@ -715,7 +753,7 @@ export default function App() {
                     )}
                   </div>
                   <p style={{ fontSize:15, fontWeight:700, color:'var(--ink-primary)', marginBottom:2 }}>{perfil?.nombre||'Estudiante'}</p>
-                  <p style={{ fontSize:12, color:'var(--ink-tertiary)' }}>Pascual Bravo</p>
+                  <p style={{ fontSize:12, color:'var(--ink-tertiary)' }}>{perfil?.universidad || 'Universidad'}</p>
                   <span className="estudiante-badge">Estudiante</span>
                 </div>
 

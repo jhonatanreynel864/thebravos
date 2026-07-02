@@ -1,6 +1,33 @@
 import { useState } from 'react'
 import { supabase, esCorreoValido, DOMINIO_PERMITIDO } from '../lib/supabase'
 
+const MAPA_UNIVERSIDADES = {
+  'pascualbravo.edu.co': 'Pascual Bravo',
+  'udea.edu.co': 'Universidad de Antioquia',
+  'unal.edu.co': 'Universidad Nacional de Colombia',
+  'eafit.edu.co': 'Universidad EAFIT',
+  'soyudemedellin.edu.co': 'Universidad de Medellín',
+  'upb.edu.co': 'Universidad Pontificia Bolivariana',
+  'uniandes.edu.co': 'Universidad de los Andes',
+  'javeriana.edu.co': 'Pontificia Universidad Javeriana',
+  'usbmed.edu.co': 'Universidad de San Buenaventura',
+  'itm.edu.co': 'Instituto Tecnológico Metropolitano',
+  'tdea.edu.co': 'Tecnológico de Antioquia',
+  'colmayor.edu.co': 'Colegio Mayor de Antioquia',
+  'uniremington.edu.co': 'Corporación Universitaria Remington',
+  'unaula.edu.co': 'Universidad Autónoma Latinoamericana',
+}
+
+function detectarUniversidad(email) {
+  const dominio = email.split('@')[1]?.toLowerCase().trim()
+  if (!dominio) return 'Universidad'
+  if (MAPA_UNIVERSIDADES[dominio]) return MAPA_UNIVERSIDADES[dominio]
+  // Fallback: convierte "miuniversidad.edu.co" en "Miuniversidad"
+  const nombreBase = dominio.split('.edu.co')[0].split('.')[0]
+  const limpio = nombreBase.replace(/[-_]/g, ' ')
+  return limpio.charAt(0).toUpperCase() + limpio.slice(1)
+}
+
 export default function Login() {
   const [modo, setModo] = useState('login')
   const [email, setEmail] = useState('')
@@ -44,9 +71,10 @@ export default function Login() {
       return
     }
     setCargando(true)
+    const universidad = detectarUniversidad(email)
     const { error } = await supabase.auth.signUp({
       email, password,
-      options: { data: { nombre, carrera } }
+      options: { data: { nombre, carrera, universidad } }
     })
     if (error) {
       setError(error.message)
