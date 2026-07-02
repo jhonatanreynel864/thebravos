@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import { Bell, Heart, ThumbsDown, MessageCircle, UserPlus, Check, Trash2, Repeat2 } from 'lucide-react'
 
-export default function Notificaciones() {
+export default function Notificaciones({ onLimpiar }) {
   const { usuario } = useAuth()
   const [notificaciones, setNotificaciones] = useState([])
   const [cargando, setCargando] = useState(true)
@@ -69,10 +69,10 @@ export default function Notificaciones() {
       .from('publicaciones').select('id').eq('user_id', usuario.id)
     const misPubIds = (misPubs || []).map(p => p.id)
 
-    const [reacciones, comentarios, solicitudes, repostsData] = await Promise.all([
+    const [reaccionesRaw, comentarios, solicitudes, repostsRaw] = await Promise.all([
       misPubIds.length > 0
         ? supabase.from('reacciones')
-            .select('tipo, created_at, publicacion_id, user_id, profiles!reacciones_user_id_fkey(nombre, foto_perfil_url), publicaciones!reacciones_publicacion_id_fkey(contenido)')
+            .select('tipo, created_at, publicacion_id, user_id')
             .in('publicacion_id', misPubIds)
             .neq('user_id', usuario.id)
             .order('created_at', { ascending: false })
@@ -96,13 +96,50 @@ export default function Notificaciones() {
 
       misPubIds.length > 0
         ? supabase.from('reposts')
-            .select('created_at, publicacion_id, user_id, profiles!reposts_user_id_fkey(nombre, foto_perfil_url), publicaciones!reposts_publicacion_id_fkey(contenido)')
+            .select('created_at, publicacion_id, user_id')
             .in('publicacion_id', misPubIds)
             .neq('user_id', usuario.id)
             .order('created_at', { ascending: false })
             .limit(10)
         : { data: [] },
     ])
+
+    // Traer perfiles y publicaciones aparte para reacciones y reposts
+    const userIdsNecesarios = [...new Set([
+      ...(reaccionesRaw.data || []).map(r => r.user_id),
+      ...(repostsRaw.data || []).map(r => r.user_id),
+    ])]
+    const pubIdsNecesarios = [...new Set([
+      ...(reaccionesRaw.data || []).map(r => r.publicacion_id),
+      ...(repostsRaw.data || []).map(r => r.publicacion_id),
+    ])]
+
+    const [perfilesExtra, pubsExtra] = await Promise.all([
+      userIdsNecesarios.length > 0
+        ? supabase.from('profiles').select('id, nombre, foto_perfil_url').in('id', userIdsNecesarios)
+        : { data: [] },
+      pubIdsNecesarios.length > 0
+        ? supabase.from('publicaciones').select('id, contenido').in('id', pubIdsNecesarios)
+        : { data: [] },
+    ])
+
+    const mapaPerfiles = Object.fromEntries((perfilesExtra.data || []).map(p => [p.id, p]))
+    const mapaPubs = Object.fromEntries((pubsExtra.data || []).map(p => [p.id, p]))
+
+    const reacciones = {
+      data: (reaccionesRaw.data || []).map(r => ({
+        ...r,
+        profiles: mapaPerfiles[r.user_id] || null,
+        publicaciones: mapaPubs[r.publicacion_id] || null,
+      }))
+    }
+    const repostsData = {
+      data: (repostsRaw.data || []).map(r => ({
+        ...r,
+        profiles: mapaPerfiles[r.user_id] || null,
+        publicaciones: mapaPubs[r.publicacion_id] || null,
+      }))
+    }
 
     const todas = [
       ...(reacciones.data || []).map(r => ({
@@ -152,15 +189,16 @@ export default function Notificaciones() {
   }
 
   async function limpiar() {
-  const ahora = new Date().toISOString()
-  const { error } = await supabase.from('notificaciones_vistas')
-    .upsert({ user_id: usuario.id, vistas_hasta: ahora }, { onConflict: 'user_id' })
-  if (error) {
-    console.error('Error guardando vistas_hasta:', error)
-    return
+    const ahora = new Date().toISOString()
+    const { error } = await supabase.from('notificaciones_vistas')
+      .upsert({ user_id: usuario.id, vistas_hasta: ahora }, { onConflict: 'user_id' })
+    if (error) {
+      console.error('Error guardando vistas_hasta:', error)
+      return
+    }
+    setNotificaciones(prev => prev.map(n => ({ ...n, nueva: false })))
+    if (onLimpiar) onLimpiar()
   }
-  setNotificaciones(prev => prev.map(n => ({ ...n, nueva: false })))
-}
 
   const hayNuevas = notificaciones.some(n => n.nueva)
 

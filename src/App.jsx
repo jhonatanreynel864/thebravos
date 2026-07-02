@@ -361,41 +361,39 @@ export default function App() {
   }
 
   async function cargarTotalNotificaciones() {
-  if (!usuario?.id) return
-  const { data: vistasData } = await supabase
-    .from('notificaciones_vistas').select('vistas_hasta')
-    .eq('user_id', usuario.id).single()
-  const vistasHasta = vistasData?.vistas_hasta || null
+    if (!usuario?.id) return
+    const { data: vistasData } = await supabase
+      .from('notificaciones_vistas').select('vistas_hasta')
+      .eq('user_id', usuario.id).single()
+    const vistasHasta = vistasData?.vistas_hasta || null
 
-  const { data: misPubs } = await supabase
-    .from('publicaciones').select('id').eq('user_id', usuario.id)
-  const misPubIds = (misPubs || []).map(p => p.id)
+    const { data: misPubs } = await supabase
+      .from('publicaciones').select('id').eq('user_id', usuario.id)
+    const misPubIds = (misPubs || []).map(p => p.id)
 
-  const filtroFecha = vistasHasta ? `created_at=gt.${vistasHasta}` : null
-
-  let total = 0
-  const { count: solicitudes } = await supabase
-  .from('amigos').select('*', { count:'exact', head:true })
-  .eq('amigo_id', usuario.id)
-  .gt('created_at', vistasHasta || '1970-01-01')
+    let total = 0
+    const { count: solicitudes } = await supabase
+      .from('amigos').select('*', { count:'exact', head:true })
+      .eq('amigo_id', usuario.id)
+      .gt('created_at', vistasHasta || '1970-01-01')
     total += solicitudes || 0
 
-  if (misPubIds.length > 0) {
-    const [r, c, rp] = await Promise.all([
-      supabase.from('reacciones').select('*', { count:'exact', head:true })
-        .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
-        .gt('created_at', vistasHasta || '1970-01-01'),
-      supabase.from('comentarios').select('*', { count:'exact', head:true })
-        .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
-        .gt('created_at', vistasHasta || '1970-01-01'),
-      supabase.from('reposts').select('*', { count:'exact', head:true })
-        .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
-        .gt('created_at', vistasHasta || '1970-01-01'),
-    ])
-    total += (r.count || 0) + (c.count || 0) + (rp.count || 0)
+    if (misPubIds.length > 0) {
+      const [r, c, rp] = await Promise.all([
+        supabase.from('reacciones').select('*', { count:'exact', head:true })
+          .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
+          .gt('created_at', vistasHasta || '1970-01-01'),
+        supabase.from('comentarios').select('*', { count:'exact', head:true })
+          .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
+          .gt('created_at', vistasHasta || '1970-01-01'),
+        supabase.from('reposts').select('*', { count:'exact', head:true })
+          .in('publicacion_id', misPubIds).neq('user_id', usuario.id)
+          .gt('created_at', vistasHasta || '1970-01-01'),
+      ])
+      total += (r.count || 0) + (c.count || 0) + (rp.count || 0)
+    }
+    setTotalNotificaciones(total)
   }
-  setTotalNotificaciones(total)
-}
 
   async function cargarTotalMensajes() {
     if (!usuario?.id) return
@@ -626,7 +624,7 @@ export default function App() {
             )}
             {vista === 'explorar' && <Explorar onCarreraGuardada={cargarCarrerasGuardadas} />}
             {vista === 'mensajes' && <Mensajes />}
-            {vista === 'notificaciones' && <Notificaciones />}
+            {vista === 'notificaciones' && <Notificaciones onLimpiar={cargarTotalNotificaciones} />}
           </main>
 
           {/* Sidebar derecho */}
